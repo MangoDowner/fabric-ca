@@ -26,6 +26,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/tjfoc/gmsm/sm2"
 )
 
 // struct to hold info required for PKCS#8
@@ -142,6 +143,11 @@ func PrivateKeyToPEM(privateKey interface{}, pwd []byte) ([]byte, error) {
 				Bytes: raw,
 			},
 		), nil
+	case *sm2.PrivateKey:
+		if k == nil {
+			return nil, errors.New("Invalid sm2 private key. It must be different from nil.")
+		}
+		return sm2.WritePrivateKeytoMem(k, nil)
 	default:
 		return nil, errors.New("Invalid key type. It must be *ecdsa.PrivateKey or *rsa.PrivateKey")
 	}
@@ -454,6 +460,9 @@ func DERToPublicKey(raw []byte) (pub interface{}, err error) {
 	}
 
 	key, err := x509.ParsePKIXPublicKey(raw)
+	if err != nil {
+		key, err = sm2.ParseSm2PublicKey(raw)
+	}
 
 	return key, err
 }

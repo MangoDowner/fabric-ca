@@ -207,6 +207,7 @@ func GetSignerFromCertFile(certFile string, csp bccsp.BCCSP) (bccsp.Key, crypto.
 		parsedCa *x509.Certificate
 		err error
 	)
+	// Load cert file
 	if IsGMConfig() {
 		parsedSms2Ca, err := sm2.ReadCertificateFromPem(certFile)
 		if err != nil {
@@ -214,14 +215,14 @@ func GetSignerFromCertFile(certFile string, csp bccsp.BCCSP) (bccsp.Key, crypto.
 		}
 		parsedCa = ParseSm2Certificate2X509(parsedSms2Ca)
 	} else {
-		// Load cert file
 		certBytes, err := ioutil.ReadFile(certFile)
 		if err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "不能读取证书文件(certFile): '%s'", certFile)
+			return nil, nil, nil, errors.Wrapf(err, "Could not read certFile '%s'", certFile)
 		}
 		// Parse certificate
 		parsedCa, err = helpers.ParseCertificatePEM(certBytes)
 	}
+
 
 	if err != nil {
 		return nil, nil, nil, err

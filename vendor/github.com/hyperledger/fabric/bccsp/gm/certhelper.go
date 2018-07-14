@@ -24,7 +24,7 @@ import (
 	"math/big"
 
 	"github.com/tjfoc/gmsm/sm2"
-	"github.com/tjfoc/hyperledger-fabric-gm/bccsp"
+	"github.com/hyperledger/fabric/bccsp"
 )
 
 // //调用SM2接口生成SM2证书

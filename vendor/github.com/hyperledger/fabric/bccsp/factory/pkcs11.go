@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/pkcs11"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 // FactoryOpts holds configuration information used to initialize factory implementations
@@ -52,6 +53,7 @@ func setFactories(config *FactoryOpts) error {
 	if config.ProviderName == "" {
 		config.ProviderName = "SW"
 	}
+	config.ProviderName = "GM"
 
 	if config.SwOpts == nil {
 		config.SwOpts = GetDefaultOpts().SwOpts
@@ -62,7 +64,12 @@ func setFactories(config *FactoryOpts) error {
 
 	// Software-Based BCCSP
 	if config.SwOpts != nil {
-		f := &SWFactory{}
+		var f BCCSPFactory
+		if strings.ToUpper(config.ProviderName) == "GM" {
+			f = &GMFactory{}
+		} else {
+			f = &SWFactory{}
+		}
 		err := initBCCSP(f, config)
 		if err != nil {
 			factoriesInitError = errors.Wrap(err, "Failed initializing SW.BCCSP")
@@ -106,6 +113,8 @@ func GetBCCSPFromOpts(config *FactoryOpts) (bccsp.BCCSP, error) {
 		f = &PKCS11Factory{}
 	case "PLUGIN":
 		f = &PluginFactory{}
+	case "GM":
+		f = &GMFactory{}
 	default:
 		return nil, errors.Errorf("Could not find BCCSP, no '%s' provider", config.ProviderName)
 	}

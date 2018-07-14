@@ -484,7 +484,19 @@ func GetX509CertificateFromPEM(cert []byte) (*x509.Certificate, error) {
 	if block == nil {
 		return nil, errors.New("Failed to PEM decode certificate")
 	}
-	x509Cert, err := x509.ParseCertificate(block.Bytes)
+	var (
+		x509Cert *x509.Certificate
+		err error
+	)
+	//支持国密
+	if IsGMConfig() {
+		sm2x509Cert, err := sm2.ParseCertificate(block.Bytes)
+		if err == nil {
+			x509Cert = ParseSm2Certificate2X509(sm2x509Cert)
+		}
+	} else {
+		x509Cert, err = x509.ParseCertificate(block.Bytes)
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing certificate")
 	}
