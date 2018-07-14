@@ -18,16 +18,13 @@ limitations under the License.
 
 package lib
 
-import "github.com/hyperledger/fabric-ca/api"
+import (
+	"github.com/hyperledger/fabric-ca/api"
+)
 
 // GetKeyRequest constructs and returns api.BasicKeyRequest object based on the bccsp
 // configuration options
 func GetKeyRequest(cfg *CAConfig) *api.BasicKeyRequest {
-	if cfg.CSP.SwOpts != nil {
-		return &api.BasicKeyRequest{Algo: "ecdsa", Size: cfg.CSP.SwOpts.SecLevel}
-	} else if cfg.CSP.Pkcs11Opts != nil {
-		return &api.BasicKeyRequest{Algo: "ecdsa", Size: cfg.CSP.Pkcs11Opts.SecLevel}
-	} else {
-		return api.NewBasicKeyRequest()
-	}
+	// FIXME: 现在写死为gmsm2:256，后面改为可配置
+	return api.NewBasicKeyRequest()
 }
