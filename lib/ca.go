@@ -352,9 +352,15 @@ func (ca *CA) getCACert() (cert []byte, err error) {
 		}
 		log.Debugf("Root CA certificate request: %+v", req)
 		// Generate the key/signer
-		_, cspSigner, err := util.BCCSPKeyRequestGenerate(&req, ca.csp)
+		key, cspSigner, err := util.BCCSPKeyRequestGenerate(&req, ca.csp)
 		if err != nil {
 			return nil, err
+		}
+		// 调用CFSSL来初始化CA
+		if IsGMConfig() {
+			cert, err = createGmSm2Cert(key, &req, cspSigner)
+		} else {
+			cert, _, err = initca.NewFromSigner(&req, cspSigner)
 		}
 		// Call CFSSL to initialize the CA
 		cert, _, err = initca.NewFromSigner(&req, cspSigner)

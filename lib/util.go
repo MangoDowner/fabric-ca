@@ -182,3 +182,20 @@ func AffiliationDecoder(decoder *json.Decoder) error {
 	fmt.Printf("%s\n", aff.Name)
 	return nil
 }
+
+var providerName string
+
+func IsGMConfig() bool {
+	return true
+	if providerName == "" {
+		return false
+	}
+	if strings.ToUpper(providerName) == "GM" {
+		return true
+	}
+	return false
+}
+
+func SetProviderName(name string) {
+	providerName = name
+}
