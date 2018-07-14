@@ -43,6 +43,8 @@ import (
 	"github.com/hyperledger/fabric/bccsp/factory"
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric/bccsp/utils"
+	"github.com/tjfoc/gmsm/sm2"
+	"github.com/hyperledger/fabric/bccsp/gm"
 )
 
 // GetDefaultBCCSP returns the default BCCSP
@@ -161,7 +163,22 @@ func GetSignerFromCert(cert *x509.Certificate, csp bccsp.BCCSP) (bccsp.Key, cryp
 		return nil, nil, errors.New("CSP was not initialized")
 	}
 	// get the public key in the right format
-	certPubK, err := csp.KeyImport(cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
+	var (
+		certPubK bccsp.Key
+		err error
+	)
+	switch cert.PublicKey.(type) {
+	//KeyImport即gm.impl.KeyImport->gm.KeyImport
+	case *sm2.PublicKey:
+		//X509证书格式转换为 SM2证书格式
+		sm2cert := gm.ParseX509Certificate2Sm2(cert)
+		certPubK, err = csp.KeyImport(sm2cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
+		//log.Infof("证书是sm2.PublicKey")
+	default:
+		sm2cert := gm.ParseX509Certificate2Sm2(cert)
+		certPubK, err = csp.KeyImport(sm2cert, &bccsp.X509PublicKeyImportOpts{Temporary: true })
+		//log.Infof("证书是默认PublicKey")
+	}
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Failed to import certificate's public key")
 	}
@@ -186,13 +203,26 @@ func GetSignerFromCert(cert *x509.Certificate, csp bccsp.BCCSP) (bccsp.Key, cryp
 
 // GetSignerFromCertFile load skiFile and load private key represented by ski and return bccsp signer that conforms to crypto.Signer
 func GetSignerFromCertFile(certFile string, csp bccsp.BCCSP) (bccsp.Key, crypto.Signer, *x509.Certificate, error) {
-	// Load cert file
-	certBytes, err := ioutil.ReadFile(certFile)
-	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "Could not read certFile '%s'", certFile)
+	var (
+		parsedCa *x509.Certificate
+		err error
+	)
+	if IsGMConfig() {
+		parsedSms2Ca, err := sm2.ReadCertificateFromPem(certFile)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("Could not Read sm2 CertificateFromPem [%s]: %s", certFile, err.Error())
+		}
+		parsedCa = ParseSm2Certificate2X509(parsedSms2Ca)
+	} else {
+		// Load cert file
+		certBytes, err := ioutil.ReadFile(certFile)
+		if err != nil {
+			return nil, nil, nil, errors.Wrapf(err, "不能读取证书文件(certFile): '%s'", certFile)
+		}
+		// Parse certificate
+		parsedCa, err = helpers.ParseCertificatePEM(certBytes)
 	}
-	// Parse certificate
-	parsedCa, err := helpers.ParseCertificatePEM(certBytes)
+
 	if err != nil {
 		return nil, nil, nil, err
 	}
