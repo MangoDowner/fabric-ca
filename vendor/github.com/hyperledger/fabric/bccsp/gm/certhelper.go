@@ -270,7 +270,7 @@ func ParseSm2Certificate2X509(sm2Cert *sm2.Certificate) *x509.Certificate {
 }
 
 //随机生成序列号
-func getRandBigInt() *big.Int {
+func GetRandBigInt() *big.Int {
 	serialNumber := make([]byte, 20)
 	_, err := io.ReadFull(rand.Reader, serialNumber)
 	if err != nil {
