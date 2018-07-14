@@ -22,6 +22,8 @@ import (
 
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/hyperledger/fabric-ca/util"
+
+	ocsr "github.com/hyperledger/fabric-ca/override/csr"
 )
 
 // RegistrationRequest for a new identity
@@ -356,6 +358,8 @@ func (ar *AttributeRequest) IsRequired() bool {
 // NewBasicKeyRequest returns the BasicKeyRequest object that is constructed
 // from the object returned by the csr.NewBasicKeyRequest() function
 func NewBasicKeyRequest() *BasicKeyRequest {
-	bkr := csr.NewBasicKeyRequest()
+	//bkr := csr.NewBasicKeyRequest()
+	// 由ecsda改爲sm2
+	bkr := ocsr.NewGMKeyRequest()
 	return &BasicKeyRequest{Algo: bkr.A, Size: bkr.S}
 }
