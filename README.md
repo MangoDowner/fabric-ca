@@ -1,3 +1,14 @@
+# Fabric CA 國密改造版本
+
+## 版本說明
++ forked 自 hyperledger/fabric-ca
++ 改造自分支release-1.1
++ 改造代碼分支爲 **release-1.1-gm**
+
+
+> ## 以下爲原README內容
+
+---
 # Fabric CA Developer's Guide
 
 This is the Developer's Guide for Fabric CA, which is a Certificate Authority for Hyperledger Fabric.
