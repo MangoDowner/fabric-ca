@@ -51,6 +51,8 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/common/attrmgr"
 	"github.com/jmoiron/sqlx"
+	"github.com/tjfoc/gmsm/sm2"
+	"github.com/hyperledger/fabric/bccsp/gm"
 )
 
 const (
@@ -90,7 +92,7 @@ type CA struct {
 	// The signer used for enrollment
 	enrollSigner signer.Signer
 	// The options to use in verifying a signature in token-based authentication
-	verifyOptions *x509.VerifyOptions
+	verifyOptions *sm2.VerifyOptions
 	// The attribute manager
 	attrMgr *attrmgr.Mgr
 	// The tcert manager for this CA
@@ -487,11 +489,12 @@ func (ca *CA) initConfig() (err error) {
 // VerifyCertificate verifies that 'cert' was issued by this CA
 // Return nil if successful; otherwise, return an error.
 func (ca *CA) VerifyCertificate(cert *x509.Certificate) error {
+	sm2Cert := gm.ParseX509Certificate2Sm2(cert)
 	opts, err := ca.getVerifyOptions()
 	if err != nil {
 		return errors.WithMessage(err, "Failed to get verify options")
 	}
-	_, err = cert.Verify(*opts)
+	_, err = sm2Cert.Verify(*opts)
 	if err != nil {
 		return errors.WithMessage(err, "Failed to verify certificate")
 	}
@@ -499,7 +502,7 @@ func (ca *CA) VerifyCertificate(cert *x509.Certificate) error {
 }
 
 // Get the options to verify
-func (ca *CA) getVerifyOptions() (*x509.VerifyOptions, error) {
+func (ca *CA) getVerifyOptions() (*sm2.VerifyOptions, error) {
 	if ca.verifyOptions != nil {
 		return ca.verifyOptions, nil
 	}
@@ -507,9 +510,10 @@ func (ca *CA) getVerifyOptions() (*x509.VerifyOptions, error) {
 	if err != nil {
 		return nil, err
 	}
-	var intPool *x509.CertPool
-	var rootPool *x509.CertPool
-
+	var (
+		intPool *sm2.CertPool
+		rootPool *sm2.CertPool
+	)
 	for len(chain) > 0 {
 		var block *pem.Block
 		block, chain = pem.Decode(chain)
@@ -520,7 +524,7 @@ func (ca *CA) getVerifyOptions() (*x509.VerifyOptions, error) {
 			continue
 		}
 
-		cert, err := x509.ParseCertificate(block.Bytes)
+		cert, err := sm2.ParseCertificate(block.Bytes)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to parse CA chain certificate")
 		}
@@ -533,21 +537,21 @@ func (ca *CA) getVerifyOptions() (*x509.VerifyOptions, error) {
 		// then it is a root certificate
 		if len(cert.AuthorityKeyId) == 0 || bytes.Equal(cert.AuthorityKeyId, cert.SubjectKeyId) {
 			if rootPool == nil {
-				rootPool = x509.NewCertPool()
+				rootPool = sm2.NewCertPool()
 			}
 			rootPool.AddCert(cert)
 		} else {
 			if intPool == nil {
-				intPool = x509.NewCertPool()
+				intPool = sm2.NewCertPool()
 			}
 			intPool.AddCert(cert)
 		}
 	}
 
-	ca.verifyOptions = &x509.VerifyOptions{
+	ca.verifyOptions = &sm2.VerifyOptions{
 		Roots:         rootPool,
 		Intermediates: intPool,
-		KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+		KeyUsages:     []sm2.ExtKeyUsage{sm2.ExtKeyUsageAny},
 	}
 	return ca.verifyOptions, nil
 }
