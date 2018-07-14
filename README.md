@@ -5,6 +5,9 @@
 + 改造自分支release-1.1
 + 改造代碼分支爲 **release-1.1-gm**
 
+懶得看原來英文文檔的可以看下面這篇學習如何安裝調試Fabric CA
+[Fabric-CA安裝](https://mangodowner.gitbooks.io/hyperledger-fabric/content/ca-install.html)
+
 
 > ## 以下爲原README內容
 
