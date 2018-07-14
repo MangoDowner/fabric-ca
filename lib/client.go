@@ -40,6 +40,8 @@ import (
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/mitchellh/mapstructure"
+
+	csro "github.com/hyperledger/fabric-ca/override/csr"
 )
 
 // Client is the fabric-ca client object
@@ -105,6 +107,7 @@ func (c *Client) Init() error {
 		// Successfully initialized the client
 		c.initialized = true
 	}
+	SetProviderName(c.Config.CSP.ProviderName)
 	return nil
 }
 
