@@ -144,6 +144,7 @@ func initCA(ca *CA, homeDir string, config *CAConfig, server *Server, renew bool
 // Init initializes an instance of a CA
 func (ca *CA) init(renew bool) (err error) {
 	log.Debugf("Init CA with home %s and config %+v", ca.HomeDir, *ca.Config)
+	SetProviderName(ca.Config.CSP.ProviderName)
 	// Initialize the config, setting defaults, etc
 	ca.dbInitialized = false
 
@@ -356,14 +357,12 @@ func (ca *CA) getCACert() (cert []byte, err error) {
 		if err != nil {
 			return nil, err
 		}
-		// 调用CFSSL来初始化CA
+		// Call CFSSL to initialize the CA
 		if IsGMConfig() {
 			cert, err = createGmSm2Cert(key, &req, cspSigner)
 		} else {
 			cert, _, err = initca.NewFromSigner(&req, cspSigner)
 		}
-		// Call CFSSL to initialize the CA
-		cert, _, err = initca.NewFromSigner(&req, cspSigner)
 		if err != nil {
 			return nil, errors.WithMessage(err, "Failed to create new CA certificate")
 		}

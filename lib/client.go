@@ -268,14 +268,20 @@ func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, bccsp.Key, error) 
 	if cr.KeyRequest == nil {
 		cr.KeyRequest = newCfsslBasicKeyRequest(api.NewBasicKeyRequest())
 	}
-
+	if IsGMConfig() {
+		cr.KeyRequest = csro.NewGMKeyRequest()
+	}
 	key, cspSigner, err := util.BCCSPKeyRequestGenerate(cr, c.csp)
 	if err != nil {
 		log.Debugf("failed generating BCCSP key: %s", err)
 		return nil, nil, err
 	}
-
 	csrPEM, err := csr.Generate(cspSigner, cr)
+	if IsGMConfig() {
+		csrPEM, err = Generate(cspSigner, cr, key)
+	} else {
+		csrPEM, err = csr.Generate(cspSigner, cr)
+	}
 	if err != nil {
 		log.Debugf("failed generating CSR: %s", err)
 		return nil, nil, err
