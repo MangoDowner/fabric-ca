@@ -18,7 +18,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"net/url"
@@ -34,6 +33,7 @@ import (
 	"github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/spf13/cobra"
+	"github.com/tjfoc/gmsm/sm2"
 )
 
 func (c *ClientCmd) newGetCACertCommand() *cobra.Command {
@@ -120,8 +120,8 @@ func storeCAChain(config *lib.ClientConfig, si *lib.GetServerInfoResponse) error
 		if block == nil {
 			break
 		}
-
-		cert, err := x509.ParseCertificate(block.Bytes)
+		//FIXME:改为根据Provider判定
+		cert, err := sm2.ParseCertificate(block.Bytes)
 		if err != nil {
 			return errors.Wrap(err, "Failed to parse certificate in the CA chain")
 		}
