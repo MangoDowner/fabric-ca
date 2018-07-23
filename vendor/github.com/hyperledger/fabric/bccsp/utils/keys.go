@@ -232,19 +232,20 @@ func PEMtoPrivateKey(raw []byte, pwd []byte) (interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Failed PEM decryption [%s]", err)
 		}
-
-		key, err := DERToPrivateKey(decrypted)
+		//key, err := DERToPrivateKey(decrypted)
+		key, err := sm2.ParsePKCS8UnecryptedPrivateKey(decrypted)
 		if err != nil {
 			return nil, err
 		}
 		return key, err
 	}
+	//cert, err := DERToPrivateKey(block.Bytes)
+	key, err := sm2.ParsePKCS8UnecryptedPrivateKey(block.Bytes)
 
-	cert, err := DERToPrivateKey(block.Bytes)
 	if err != nil {
 		return nil, err
 	}
-	return cert, err
+	return key, err
 }
 
 // PEMtoAES extracts from the PEM an AES key

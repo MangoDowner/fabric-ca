@@ -220,10 +220,12 @@ func (ca *CA) initKeyMaterial(renew bool) error {
 			log.Info("The CA key and certificate files already exist")
 			log.Infof("Key file location: %s", keyFile)
 			log.Infof("Certificate file location: %s", certFile)
-			err = ca.validateCertAndKey(certFile, keyFile)
-			if err != nil {
-				return errors.WithMessage(err, "Validation of certificate and key failed")
-			}
+			// FIXME: 去除CA的验证,后续添加上
+			//err = ca.validateCertAndKey(certFile, keyFile)
+			//if err != nil {
+			//	return errors.WithMessage(err, "Validation of certificate and key failed")
+			//}
+
 			// Load CN from existing enrollment information and set CSR accordingly
 			// CN needs to be set, having a multi CA setup requires a unique CN and can't
 			// be left blank
@@ -739,7 +741,7 @@ func (ca *CA) initEnrollmentSigner() (err error) {
 			return errors.Wrap(err, "Failed initializing enrollment signer")
 		}
 	}
-
+	fmt.Println("[ca:initEnrollmentSigner]")
 	ca.enrollSigner, err = util.BccspBackedSigner(c.CA.Certfile, c.CA.Keyfile, policy, ca.csp)
 	if err != nil {
 		return err

@@ -272,6 +272,15 @@ func ImportBCCSPKeyFromPEM(keyFile string, myCSP bccsp.BCCSP, temporary bool) (b
 			return nil, errors.WithMessage(err, fmt.Sprintf("Failed to import ECDSA private key for '%s'", keyFile))
 		}
 		return sk, nil
+	case *sm2.PrivateKey:
+		block, _ := pem.Decode(keyBuff)
+		priv := block.Bytes
+		//priv, err := utils.PrivateKeyToDER(key.(*sm2.PrivateKey))
+		sk, err := myCSP.KeyImport(priv, &bccsp.GMSM2PrivateKeyImportOpts{Temporary: temporary})
+		if err != nil {
+			return nil, errors.WithMessage(err, fmt.Sprintf("Failed to import SM2 private key for '%s'", keyFile))
+		}
+		return sk, nil
 	case *rsa.PrivateKey:
 		return nil, errors.Errorf("Failed to import RSA key from %s; RSA private key import is not supported", keyFile)
 	default:
