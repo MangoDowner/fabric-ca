@@ -502,11 +502,12 @@ func (s *Server) listenAndServe() (err error) {
 	if c.TLS.Enabled {
 		log.Debug("TLS is enabled")
 		addrStr = fmt.Sprintf("https://%s", addr)
-
-		// If key file is specified and it does not exist or its corresponding certificate file does not exist
-		// then need to return error and not start the server. The TLS key file is specified when the user
-		// wants the server to use custom tls key and cert and don't want server to auto generate its own. So,
-		// when the key file is specified, it must exist on the file system
+		//FIXME: 写死的文件名需要改掉
+		c.TLS.CertFile = "ca-cert.pem"
+		c.TLS.KeyFile = "ca-key.pem"
+		// 如果key文件被指定并且它不存在或者它相应的证书文件不存在, 需要返回错误，而不是启动服务器
+		// TLS密钥文件是在这种情形下被指定的:用户希望服务器使用定制的tls密钥和cert，并且不希望服务器自动生成它自己的。
+		// 所以,当指定钥匙文件时，它必须存在于文件系统中
 		if c.TLS.KeyFile != "" {
 			if !util.FileExists(c.TLS.KeyFile) {
 				return fmt.Errorf("File specified by 'tls.keyfile' does not exist: %s", c.TLS.KeyFile)
@@ -515,13 +516,13 @@ func (s *Server) listenAndServe() (err error) {
 				return fmt.Errorf("File specified by 'tls.certfile' does not exist: %s", c.TLS.CertFile)
 			}
 		} else if !util.FileExists(c.TLS.CertFile) {
-			// TLS key file is not specified, generate TLS key and cert if they are not already generated
+			// TLS密钥文件没有被指定，如果它们还没有生成，就生成TLS密钥和cert
 			err = s.autoGenerateTLSCertificateKey()
 			if err != nil {
 				return fmt.Errorf("Failed to automatically generate TLS certificate and key: %s", err)
 			}
 		}
-		log.Debugf("TLS Certificate: %s, TLS Key: %s", c.TLS.CertFile, c.TLS.KeyFile)
+		log.Infof("TLS Certificate: %s, TLS Key: %s", c.TLS.CertFile, c.TLS.KeyFile)
 
 		cer, err := util.LoadX509KeyPair(c.TLS.CertFile, c.TLS.KeyFile, s.csp)
 		if err != nil {
@@ -532,7 +533,7 @@ func (s *Server) listenAndServe() (err error) {
 			c.TLS.ClientAuth.Type = defaultClientAuth
 		}
 
-		log.Debugf("Client authentication type requested: %s", c.TLS.ClientAuth.Type)
+		log.Infof("Client authentication type requested: %s", c.TLS.ClientAuth.Type)
 
 		authType := strings.ToLower(c.TLS.ClientAuth.Type)
 		if clientAuth, ok = clientAuthTypes[authType]; !ok {

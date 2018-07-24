@@ -24,6 +24,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
+
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -43,8 +44,9 @@ import (
 	"github.com/hyperledger/fabric/bccsp/factory"
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric/bccsp/utils"
-	"github.com/tjfoc/gmsm/sm2"
+
 	"github.com/hyperledger/fabric/bccsp/gm"
+	"github.com/tjfoc/gmsm/sm2"
 )
 
 // GetDefaultBCCSP returns the default BCCSP
@@ -76,8 +78,8 @@ func GetBCCSP(opts *factory.FactoryOpts, homeDir string) (bccsp.BCCSP, error) {
 	return csp, nil
 }
 
-// makeFileNamesAbsolute makes all relative file names associated with CSP absolute,
-// relative to 'homeDir'.
+// makeFileNamesAbsolute将所有CSP有关的文件名字绝对化
+// 相对'homeDir'
 func makeFileNamesAbsolute(opts *factory.FactoryOpts, homeDir string) error {
 	var err error
 	if opts != nil && opts.SwOpts != nil && opts.SwOpts.FileKeystore != nil {
@@ -87,10 +89,12 @@ func makeFileNamesAbsolute(opts *factory.FactoryOpts, homeDir string) error {
 	return err
 }
 
-// BccspBackedSigner attempts to create a signer using csp bccsp.BCCSP. This csp could be SW (golang crypto)
-// PKCS11 or whatever BCCSP-conformant library is configured
+// ccspBackedSigner尝试使用csp bccsp.BCCSP创建一个签名者(signer)。
+// 这个csp可以是SW（golang加密）PKCS11或者任何bccsp-兼容库配置
 func BccspBackedSigner(caFile, keyFile string, policy *config.Signing, csp bccsp.BCCSP) (signer.Signer, error) {
+	//log.Infof("---[csp:BccspBackedSigner]caFile路径:%s", caFile)
 	_, cspSigner, parsedCa, err := GetSignerFromCertFile(caFile, csp)
+	//log.Infof("---[csp:BccspBackedSigner]调用 GetSignerFromCertFile 错误: %s", err)
 	if err != nil {
 		// Fallback: attempt to read out of keyFile and import
 		log.Debugf("No key found in BCCSP keystore, attempting fallback")
@@ -98,26 +102,27 @@ func BccspBackedSigner(caFile, keyFile string, policy *config.Signing, csp bccsp
 		var signer crypto.Signer
 
 		key, err = ImportBCCSPKeyFromPEM(keyFile, csp, false)
+		//log.Infof("---[csp:BccspBackedSigner]调用 ImportBCCSPKeyFromPEM 错误: %s", err)
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("Could not find the private key in BCCSP keystore nor in keyfile '%s'", keyFile))
 		}
 
 		signer, err = cspsigner.New(csp, key)
 		if err != nil {
-			return nil, errors.WithMessage(err, "Failed initializing CryptoSigner")
+			return nil, fmt.Errorf("Failed initializing CryptoSigner: %s", err)
 		}
 		cspSigner = signer
 	}
 
 	signer, err := local.NewSigner(cspSigner, parsedCa, signer.DefaultSigAlgo(cspSigner), policy)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create new signer")
+		return nil, fmt.Errorf("Failed to create new signer: %s", err.Error())
 	}
 	return signer, nil
 }
 
-// getBCCSPKeyOpts generates a key as specified in the request.
-// This supports ECDSA and RSA.
+// getbccspkey选择根据请求中指定的密钥生成一个密钥
+// 支持ECDSA / RSA / ALSO / SM2
 func getBCCSPKeyOpts(kr csr.KeyRequest, ephemeral bool) (opts bccsp.KeyGenOpts, err error) {
 	if kr == nil {
 		return &bccsp.ECDSAKeyGenOpts{Temporary: ephemeral}, nil
@@ -157,16 +162,18 @@ func getBCCSPKeyOpts(kr csr.KeyRequest, ephemeral bool) (opts bccsp.KeyGenOpts, 
 	}
 }
 
-// GetSignerFromCert load private key represented by ski and return bccsp signer that conforms to crypto.Signer
+// GetSignerFromCert 加载SKI展现的密钥，并返回符合crypto.Signer的bccsp signer
 func GetSignerFromCert(cert *x509.Certificate, csp bccsp.BCCSP) (bccsp.Key, crypto.Signer, error) {
 	if csp == nil {
-		return nil, nil, errors.New("CSP was not initialized")
+		return nil, nil, errors.New("CSP没有初始化")
 	}
-	// get the public key in the right format
+	// 以正确的格式获取公钥
 	var (
 		certPubK bccsp.Key
 		err error
 	)
+	//FIXME: 同济国密改造这里类型居然写错??sm2.PublicKey而不是*sm2.PublicKey??"
+	//log.Info(reflect.TypeOf(cert.PublicKey))
 	switch cert.PublicKey.(type) {
 	//KeyImport即gm.impl.KeyImport->gm.KeyImport
 	case *sm2.PublicKey:
@@ -179,17 +186,21 @@ func GetSignerFromCert(cert *x509.Certificate, csp bccsp.BCCSP) (bccsp.Key, cryp
 		certPubK, err = csp.KeyImport(sm2cert, &bccsp.X509PublicKeyImportOpts{Temporary: true })
 		//log.Infof("证书是默认PublicKey")
 	}
+
 	if err != nil {
-		return nil, nil, errors.WithMessage(err, "Failed to import certificate's public key")
+		/**
+		ERROR SAMPLE:
+			Failed importing key with opts [&{true}]: [GMSM2PublicKeyImportOpts] Iterial. Expected byte array.
+		 */
+		return nil, nil, fmt.Errorf("未能导入证书的公钥: %s", err.Error())
 	}
-	// Get the key given the SKI value
+	// 得到SKI值的密钥
 	ski := certPubK.SKI()
 	privateKey, err := csp.GetKey(ski)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Could not find matching private key for SKI")
 	}
-	// BCCSP returns a public key if the private key for the SKI wasn't found, so
-	// we need to return an error in that case.
+	// 如果没有找到SKI的私钥，BCCSP返回一个公钥，因此我们需要在这种情况下返回一个错误。
 	if !privateKey.Private() {
 		return nil, nil, errors.Errorf("The private key associated with the certificate with SKI '%s' was not found", hex.EncodeToString(ski))
 	}
@@ -201,13 +212,11 @@ func GetSignerFromCert(cert *x509.Certificate, csp bccsp.BCCSP) (bccsp.Key, cryp
 	return privateKey, signer, nil
 }
 
-// GetSignerFromCertFile load skiFile and load private key represented by ski and return bccsp signer that conforms to crypto.Signer
+//GetSignerFromCertFile加载skiFile和私钥(由SKI代表)，返回符合crypto.Signer的bccsp签署者
 func GetSignerFromCertFile(certFile string, csp bccsp.BCCSP) (bccsp.Key, crypto.Signer, *x509.Certificate, error) {
-	var (
-		parsedCa *x509.Certificate
-		err error
-	)
-	// Load cert file
+	// 加载证书文件
+	var parsedCa *x509.Certificate
+	var err error
 	if IsGMConfig() {
 		parsedSms2Ca, err := sm2.ReadCertificateFromPem(certFile)
 		if err != nil {
@@ -219,12 +228,12 @@ func GetSignerFromCertFile(certFile string, csp bccsp.BCCSP) (bccsp.Key, crypto.
 		if err != nil {
 			return nil, nil, nil, errors.Wrapf(err, "Could not read certFile '%s'", certFile)
 		}
-		// Parse certificate
+		// 解析证书
 		parsedCa, err = helpers.ParseCertificatePEM(certBytes)
 	}
-
-
-	if err != nil {
+	//如果读取PEM失败，则将其转为sm2的PEM
+	//ERROR EXAMPLE: {"code":1003,"message":"Failed to parse certificate"}
+	if err != nil   {
 		return nil, nil, nil, err
 	}
 	// Get the signer from the cert
@@ -232,8 +241,8 @@ func GetSignerFromCertFile(certFile string, csp bccsp.BCCSP) (bccsp.Key, crypto.
 	return key, cspSigner, parsedCa, err
 }
 
-// BCCSPKeyRequestGenerate generates keys through BCCSP
-// somewhat mirroring to cfssl/req.KeyRequest.Generate()
+// BCCSPKeyRequestGenerate通过BCCSP生成钥匙
+// 有点类似于cfssl/req.KeyRequest.Generate（）
 func BCCSPKeyRequestGenerate(req *csr.CertificateRequest, myCSP bccsp.BCCSP) (bccsp.Key, crypto.Signer, error) {
 	log.Infof("generating key: %+v", req.KeyRequest)
 	keyOpts, err := getBCCSPKeyOpts(req.KeyRequest, false)
@@ -327,10 +336,19 @@ func LoadX509KeyPair(certFile, keyFile string, csp bccsp.BCCSP) (*tls.Certificat
 		}
 		return nil, errors.Errorf("Failed to find \"CERTIFICATE\" PEM block in file %s after skipping PEM blocks of the following types: %v", certFile, skippedBlockTypes)
 	}
-
-	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
-	if err != nil {
-		return nil, err
+	var x509Cert *x509.Certificate
+	//支持国密
+	if IsGMConfig() {
+		sm2Cert, err := sm2.ParseCertificate(cert.Certificate[0])
+		if err != nil {
+			return nil, err
+		}
+		x509Cert = ParseSm2Certificate2X509(sm2Cert)
+	} else {
+		x509Cert, err = x509.ParseCertificate(cert.Certificate[0])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	_, cert.PrivateKey, err = GetSignerFromCert(x509Cert, csp)
