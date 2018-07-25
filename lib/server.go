@@ -502,9 +502,6 @@ func (s *Server) listenAndServe() (err error) {
 	if c.TLS.Enabled {
 		log.Debug("TLS is enabled")
 		addrStr = fmt.Sprintf("https://%s", addr)
-		//FIXME: 写死的文件名需要改掉
-		c.TLS.CertFile = "ca-cert.pem"
-		c.TLS.KeyFile = "ca-key.pem"
 		// 如果key文件被指定并且它不存在或者它相应的证书文件不存在, 需要返回错误，而不是启动服务器
 		// TLS密钥文件是在这种情形下被指定的:用户希望服务器使用定制的tls密钥和cert，并且不希望服务器自动生成它自己的。
 		// 所以,当指定钥匙文件时，它必须存在于文件系统中
@@ -756,6 +753,7 @@ func (s *Server) autoGenerateTLSCertificateKey() error {
 	// Use default CA to get back signed TLS certificate
 	cert, err := s.CA.enrollSigner.Sign(req)
 	if err != nil {
+		//TODO: here comes the error!
 		return fmt.Errorf("Failed to generate TLS certificate: %s", err)
 	}
 
