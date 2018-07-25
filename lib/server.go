@@ -45,6 +45,8 @@ import (
 	stls "github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/spf13/viper"
+	cfcsr "github.com/cloudflare/cfssl/csr"
+
 )
 
 const (
@@ -749,9 +751,29 @@ func (s *Server) autoGenerateTLSCertificateKey() error {
 		Profile: "tls",
 		Request: string(csr),
 	}
-
 	// Use default CA to get back signed TLS certificate
-	cert, err := s.CA.enrollSigner.Sign(req)
+
+	var cert []byte
+	if IsGMConfig() {
+		// Generate the key/signer
+		csr := &s.CA.Config.CSR
+		req := cfcsr.CertificateRequest{
+			CN:           csr.CN,
+			Names:        csr.Names,
+			Hosts:        csr.Hosts,
+			KeyRequest:   &cfcsr.BasicKeyRequest{A: csr.KeyRequest.Algo, S: csr.KeyRequest.Size},
+			CA:           csr.CA,
+			SerialNumber: csr.SerialNumber,
+		}
+		key, cspSigner, err := util.BCCSPKeyRequestGenerate(&req, s.csp)
+		if err != nil {
+			return fmt.Errorf("BCCSPKeyRequestGenerate ERROR: %s", err)
+		}
+		cert, err = NewFromSigner(key, &req, cspSigner)
+	} else {
+		cert, err = s.CA.enrollSigner.Sign(req)
+	}
+	//cert, err := s.CA.enrollSigner.Sign(req)
 	if err != nil {
 		//TODO: here comes the error!
 		return fmt.Errorf("Failed to generate TLS certificate: %s", err)
