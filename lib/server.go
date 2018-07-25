@@ -521,7 +521,7 @@ func (s *Server) listenAndServe() (err error) {
 				return fmt.Errorf("Failed to automatically generate TLS certificate and key: %s", err)
 			}
 		}
-		log.Infof("TLS Certificate: %s, TLS Key: %s", c.TLS.CertFile, c.TLS.KeyFile)
+		log.Debugf("TLS Certificate: %s, TLS Key: %s", c.TLS.CertFile, c.TLS.KeyFile)
 
 		cer, err := util.LoadX509KeyPair(c.TLS.CertFile, c.TLS.KeyFile, s.csp)
 		if err != nil {
@@ -532,7 +532,7 @@ func (s *Server) listenAndServe() (err error) {
 			c.TLS.ClientAuth.Type = defaultClientAuth
 		}
 
-		log.Infof("Client authentication type requested: %s", c.TLS.ClientAuth.Type)
+		log.Debugf("Client authentication type requested: %s", c.TLS.ClientAuth.Type)
 
 		authType := strings.ToLower(c.TLS.ClientAuth.Type)
 		if clientAuth, ok = clientAuthTypes[authType]; !ok {

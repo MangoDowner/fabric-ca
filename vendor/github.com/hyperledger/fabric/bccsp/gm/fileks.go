@@ -306,7 +306,7 @@ func (ks *fileBasedKeyStore) storeKey(alias string, key []byte) error {
 
 func (ks *fileBasedKeyStore) loadPrivateKey(alias string) (interface{}, error) {
 	path := ks.getPathForAlias(alias, "sk")
-	logger.Infof("loadPrivateKey : %s", path)
+	//logger.Infof("loadPrivateKey : %s", path)
 	logger.Debugf("Loading private key [%s] at [%s]...", alias, path)
 
 	raw, err := ioutil.ReadFile(path)

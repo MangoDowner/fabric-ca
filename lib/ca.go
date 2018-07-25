@@ -741,7 +741,6 @@ func (ca *CA) initEnrollmentSigner() (err error) {
 			return errors.Wrap(err, "Failed initializing enrollment signer")
 		}
 	}
-	fmt.Println("[ca:initEnrollmentSigner]")
 	ca.enrollSigner, err = util.BccspBackedSigner(c.CA.Certfile, c.CA.Keyfile, policy, ca.csp)
 	if err != nil {
 		return err

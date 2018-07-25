@@ -137,7 +137,6 @@ func Generate(priv crypto.Signer, req *csr.CertificateRequest, key bccsp.Key) (c
 	}
 	log.Info("encoded CSR")
 	csr, err = gm.CreateSm2CertificateRequestToMem(&tpl, key)
-	//log.Infof("[gmca:Generate]---%T---", tpl.PublicKey)
 	return
 }
 
