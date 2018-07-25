@@ -80,10 +80,9 @@ func SignCert(req signer.SignRequest, ca *CA) (cert []byte, err error) {
 	return
 }
 
-//生成证书
-func createGmSm2Cert(key bccsp.Key, req *csr.CertificateRequest, priv crypto.Signer) (cert []byte, err error) {
-	log.Infof("[gmca:createGmSm2Cert]密钥:%T", key)
-
+// override: cfssl/initca.go:NewFromSigner
+// NewFromSigner creates a new root certificate from a crypto.Signer.
+func NewFromSigner(key bccsp.Key, req *csr.CertificateRequest, priv crypto.Signer) (cert []byte, err error) {
 	csrPEM, err := Generate(priv, req, key)
 	if err != nil {
 		log.Infof("[gmca:createGmSm2Cert]Call Generate() error :%s", err)
@@ -110,13 +109,10 @@ func createGmSm2Cert(key bccsp.Key, req *csr.CertificateRequest, priv crypto.Sig
 // Generate从一个CertificateRequest和一个现有的Key创建一个新的CSR。
 // KeyRequest字段被忽略。
 func Generate(priv crypto.Signer, req *csr.CertificateRequest, key bccsp.Key) (csr []byte, err error) {
-	//log.Info("---[gmca:Generate]---")
 	sigAlgo := SignerAlgo(priv)
 	if sigAlgo == sm2.UnknownSignatureAlgorithm {
 		return nil, cferr.New(cferr.PrivateKeyError, cferr.Unavailable)
 	}
-	//log.Info("---开始创建sm2.CertificateRequest---")
-	//log.Infof("---%T---", priv.Public()) //*sm2.PublicKey
 	var tpl = sm2.CertificateRequest{
 		PublicKey:          priv.Public(), //FIXED: 指定的PublicKey类型，及*sm2.PublicKey
 		Subject:            req.Name(),
@@ -139,6 +135,7 @@ func Generate(priv crypto.Signer, req *csr.CertificateRequest, key bccsp.Key) (c
 			return
 		}
 	}
+	log.Info("encoded CSR")
 	csr, err = gm.CreateSm2CertificateRequestToMem(&tpl, key)
 	//log.Infof("[gmca:Generate]---%T---", tpl.PublicKey)
 	return
