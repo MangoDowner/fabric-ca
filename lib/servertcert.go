@@ -18,10 +18,11 @@ package lib
 
 import (
 	"github.com/hyperledger/fabric-ca/api"
-	tcert "github.com/hyperledger/fabric-ca/lib/tcert"
+	"github.com/hyperledger/fabric-ca/lib/tcert"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/pkg/errors"
 )
+
 
 func newTCertEndpoint(s *Server) *serverEndpoint {
 	return &serverEndpoint{
@@ -31,7 +32,7 @@ func newTCertEndpoint(s *Server) *serverEndpoint {
 	}
 }
 
-// Handle a tcert request
+// 处理交易证书(tcert)请求
 func tcertHandler(ctx *serverRequestContext) (interface{}, error) {
 	// Authenticate caller
 	id, err := ctx.TokenAuthentication()
@@ -62,6 +63,7 @@ func tcertHandler(ctx *serverRequestContext) (interface{}, error) {
 	// Get the prekey associated with the affiliation path
 	prekey, err := ca.keyTree.GetKey(affiliationPath)
 	if err != nil {
+		//todo: here comes the error
 		return nil, newHTTPErr(500, ErrNoPreKey, "Failed to get prekey for identity %s: %s", id, err)
 	}
 	// TODO: When the TCert library is based on BCCSP, we will pass the prekey

@@ -468,7 +468,7 @@ func (s *Server) registerHandlers() {
 	s.registerHandler("enroll", newEnrollEndpoint(s))
 	s.registerHandler("reenroll", newReenrollEndpoint(s))
 	s.registerHandler("revoke", newRevokeEndpoint(s))
-	s.registerHandler("tcert", newTCertEndpoint(s))
+	s.registerHandler("tcert", newTCertEndpoint(s)) // 处理交易证书请求
 	s.registerHandler("gencrl", newGenCRLEndpoint(s))
 	s.registerHandler("identities", newIdentitiesStreamingEndpoint(s))
 	s.registerHandler("identities/{id}", newIdentitiesEndpoint(s))
