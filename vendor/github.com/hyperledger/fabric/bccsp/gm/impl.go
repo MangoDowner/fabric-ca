@@ -93,6 +93,7 @@ func New(securityLevel int, hashFamily string, keyStore bccsp.KeyStore) (bccsp.B
 
 	// Set the key derivers
 	keyDerivers := make(map[reflect.Type]KeyDeriver)
+	keyDerivers[reflect.TypeOf(&gmsm4PrivateKey{})] = &gmsm4PrivateKeyKeyDeriver{bccsp: impl}
 	impl.keyDerivers = keyDerivers
 
 	// Set the key importers
@@ -161,7 +162,6 @@ func (csp *impl) KeyDeriv(k bccsp.Key, opts bccsp.KeyDerivOpts) (dk bccsp.Key, e
 	if opts == nil {
 		return nil, errors.ErrorWithCallstack(errors.BCCSP, errors.BadRequest, "Invalid opts. It must not be nil.")
 	}
-
 	keyDeriver, found := csp.keyDerivers[reflect.TypeOf(k)]
 	if !found {
 		return nil, errors.ErrorWithCallstack(errors.BCCSP, errors.NotFound, "Unsupported 'Key' provided [%v]", k)

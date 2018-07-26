@@ -410,25 +410,3 @@ func (opts *GMSM2PublicKeyImportOpts) Algorithm() string {
 func (opts *GMSM2PublicKeyImportOpts) Ephemeral() bool {
 	return opts.Temporary
 }
-
-// GMSM2ReRandKeyOpts contains options for GMSM2 key re-randomization.
-type GMSM2ReRandKeyOpts struct {
-	Temporary bool
-	Expansion []byte
-}
-
-// Algorithm returns the key derivation algorithm identifier (to be used).
-func (opts *GMSM2ReRandKeyOpts) Algorithm() string {
-	return GMSM2ReRand
-}
-
-// Ephemeral returns true if the key to generate has to be ephemeral,
-// false otherwise.
-func (opts *GMSM2ReRandKeyOpts) Ephemeral() bool {
-	return opts.Temporary
-}
-
-// ExpansionValue returns the re-randomization factor
-func (opts *GMSM2ReRandKeyOpts) ExpansionValue() []byte {
-	return opts.Expansion
-}

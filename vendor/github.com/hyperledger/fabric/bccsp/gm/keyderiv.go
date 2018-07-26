@@ -36,7 +36,7 @@ func (kd *gmsm2PrivateKeyKeyDeriver) KeyDeriv(k bccsp.Key, opts bccsp.KeyDerivOp
 		return nil, errors.New("Invalid opts parameter. It must not be nil.")
 	}
 
-	gmsm2K := k.(*gmsm2PrivateKey)
+	aesK := k.(*gmsm4PrivateKey)
 	fmt.Println(reflect.TypeOf(opts)) //*bccsp.HMACDeriveKeyOpts
 	switch opts.(type) {
 	// Re-randomized an ECDSA private key
