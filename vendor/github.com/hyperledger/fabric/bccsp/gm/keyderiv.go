@@ -1,6 +1,5 @@
 /*
-Copyright Suzhou Tongji Fintech Research Institute 2017 All Rights Reserved.
-
+	密钥派生
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,14 +17,64 @@ package gm
 import (
 	"errors"
 
+	"fmt"
+	"math/big"
+
 	"github.com/hyperledger/fabric/bccsp"
+	"github.com/tjfoc/gmsm/sm2"
+	"reflect"
 )
 
-//定义国密 Key的驱动 ，实现 KeyDeriver 接口
-type smPublicKeyKeyDeriver struct{}
+type gmsm2PrivateKeyKeyDeriver struct {
+	bccsp *impl
+}
 
-func (kd *smPublicKeyKeyDeriver) KeyDeriv(k bccsp.Key, opts bccsp.KeyDerivOpts) (dk bccsp.Key, err error) {
+// sm2私钥派生
+func (kd *gmsm2PrivateKeyKeyDeriver) KeyDeriv(k bccsp.Key, opts bccsp.KeyDerivOpts) (dk bccsp.Key, err error) {
+	// Validate opts
+	if opts == nil {
+		return nil, errors.New("Invalid opts parameter. It must not be nil.")
+	}
 
-	return nil, errors.New("Not implemented")
+	gmsm2K := k.(*gmsm2PrivateKey)
+	fmt.Println(reflect.TypeOf(opts)) //*bccsp.HMACDeriveKeyOpts
+	switch opts.(type) {
+	// Re-randomized an ECDSA private key
+	case *bccsp.GMSM2ReRandKeyOpts:
+		reRandOpts := opts.(*bccsp.GMSM2ReRandKeyOpts)
+		tempSK := &sm2.PrivateKey{
+			PublicKey: sm2.PublicKey{
+				Curve: gmsm2K.privKey.Curve,
+				X:     new(big.Int),
+				Y:     new(big.Int),
+			},
+			D: new(big.Int),
+		}
 
+		var k = new(big.Int).SetBytes(reRandOpts.ExpansionValue())
+		var one = new(big.Int).SetInt64(1)
+		n := new(big.Int).Sub(gmsm2K.privKey.Params().N, one)
+		k.Mod(k, n)
+		k.Add(k, one)
+
+		tempSK.D.Add(gmsm2K.privKey.D, k)
+		tempSK.D.Mod(tempSK.D, gmsm2K.privKey.PublicKey.Params().N)
+
+		// Compute temporary public key
+		tempX, tempY := gmsm2K.privKey.PublicKey.ScalarBaseMult(k.Bytes())
+		tempSK.PublicKey.X, tempSK.PublicKey.Y =
+			tempSK.PublicKey.Add(
+				gmsm2K.privKey.PublicKey.X, gmsm2K.privKey.PublicKey.Y,
+				tempX, tempY,
+			)
+
+		// Verify temporary public key is a valid point on the reference curve
+		isOn := tempSK.Curve.IsOnCurve(tempSK.PublicKey.X, tempSK.PublicKey.Y)
+		if !isOn {
+			return nil, errors.New("Failed temporary public key IsOnCurve check.")
+		}
+		return &gmsm2PrivateKey{tempSK}, nil
+	default:
+		return nil, fmt.Errorf("Unsupported 'KeyDerivOpts' provided [%v]", opts)
+	}
 }

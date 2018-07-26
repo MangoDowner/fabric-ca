@@ -56,14 +56,15 @@ const (
 	// AES Advanced Encryption Standard at 256 bit security level
 	AES256 = "AES256"
 
-
-
 	// GMSM4
 	GMSM4 = "GMSM4"
 	// GMSM3
 	GMSM3 = "GMSM3"
 	// GMSM2
 	GMSM2 = "GMSM2"
+
+	// GMSM2ReRand 国密SM2 key re-randomization
+	GMSM2ReRand = "GMSM2_RERAND"
 
 	// HMAC keyed-hash message authentication code
 	HMAC = "HMAC"
@@ -257,9 +258,6 @@ func (opts *AES256ImportKeyOpts) Ephemeral() bool {
 	return opts.Temporary
 }
 
-
-
-
 // HMACImportKeyOpts contains options for importing HMAC keys.
 type HMACImportKeyOpts struct {
 	Temporary bool
@@ -333,8 +331,6 @@ func (opts *X509PublicKeyImportOpts) Ephemeral() bool {
 	return opts.Temporary
 }
 
-
-
 // GMSM2KeyGenOpts contains options for GMSM2 key generation.
 type GMSM2KeyGenOpts struct {
 	Temporary bool
@@ -366,7 +362,6 @@ func (opts *GMSM4KeyGenOpts) Algorithm() string {
 func (opts *GMSM4KeyGenOpts) Ephemeral() bool {
 	return opts.Temporary
 }
-
 
 //GMSM4ImportKeyOpts  实现  bccsp.KeyImportOpts 接口
 type GMSM4ImportKeyOpts struct {
@@ -414,4 +409,26 @@ func (opts *GMSM2PublicKeyImportOpts) Algorithm() string {
 // false otherwise.
 func (opts *GMSM2PublicKeyImportOpts) Ephemeral() bool {
 	return opts.Temporary
+}
+
+// GMSM2ReRandKeyOpts contains options for GMSM2 key re-randomization.
+type GMSM2ReRandKeyOpts struct {
+	Temporary bool
+	Expansion []byte
+}
+
+// Algorithm returns the key derivation algorithm identifier (to be used).
+func (opts *GMSM2ReRandKeyOpts) Algorithm() string {
+	return GMSM2ReRand
+}
+
+// Ephemeral returns true if the key to generate has to be ephemeral,
+// false otherwise.
+func (opts *GMSM2ReRandKeyOpts) Ephemeral() bool {
+	return opts.Temporary
+}
+
+// ExpansionValue returns the re-randomization factor
+func (opts *GMSM2ReRandKeyOpts) ExpansionValue() []byte {
+	return opts.Expansion
 }
