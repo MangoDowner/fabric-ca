@@ -146,7 +146,8 @@ func initCA(ca *CA, homeDir string, config *CAConfig, server *Server, renew bool
 // Init initializes an instance of a CA
 func (ca *CA) init(renew bool) (err error) {
 	log.Debugf("Init CA with home %s and config %+v", ca.HomeDir, *ca.Config)
-	SetProviderName(ca.Config.CSP.ProviderName)
+	//FIXME: providerName 写死
+	SetProviderName("GM")
 	// Initialize the config, setting defaults, etc
 	ca.dbInitialized = false
 
