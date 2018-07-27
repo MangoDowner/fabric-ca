@@ -85,11 +85,12 @@ func tcertHandler(ctx *serverRequestContext) (interface{}, error) {
 	return resp, nil
 }
 
-// genRootKey generates a new root key
+// genRootKey 产生一个根密钥
 func genRootKey(csp bccsp.BCCSP) (bccsp.Key, error) {
 	var opts bccsp.KeyGenOpts
 	if IsGMConfig() {
-		opts = &bccsp.GMSM2KeyGenOpts{Temporary: true}
+		//
+		opts = &bccsp.GMSM4KeyGenOpts{Temporary: true}
 	} else {
 		opts = &bccsp.ECDSAKeyGenOpts{Temporary: true}
 	}

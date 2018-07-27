@@ -155,6 +155,85 @@ func TestSRVServerInit(t *testing.T) {
 	server.HomeDir = ""
 }
 
+func TestGM(t *testing.T) {
+	var err error
+	var admin, user1 *Identity
+	var rr *api.RegistrationResponse
+
+	// Start the server
+	server := TestGetRootServer(t)
+	if server == nil {
+		return
+	}
+	err = server.Start()
+	if err != nil {
+		t.Fatalf("Server start failed: %s", err)
+	}
+	defer func() {
+		err = server.Stop()
+		if err != nil {
+			t.Errorf("Failed to stop server: %s", err)
+		}
+		err = os.RemoveAll(rootDir)
+		if err != nil {
+			t.Errorf("RemoveAll failed: %s", err)
+		}
+		err = os.RemoveAll("../testdata/msp")
+		if err != nil {
+			t.Errorf("RemoveAll failed: %s", err)
+		}
+	}()
+	err = server.Start()
+	t.Logf("Starting duplicate CA server: %s", err)
+	if err == nil {
+		t.Fatalf("Server start should have failed")
+	}
+
+	// Enroll request
+	client := getRootClient()
+	eresp, err := client.Enroll(&api.EnrollmentRequest{
+		Name:   "admin",
+		Secret: "adminpw",
+	})
+	if err != nil {
+		t.Fatalf("Failed to enroll admin/adminpw: %s", err)
+	}
+	admin = eresp.Identity
+	// Register user1
+	rr, err = admin.Register(&api.RegistrationRequest{
+		Name:        "user1",
+		Type:        "user",
+		Affiliation: "hyperledger.fabric.security",
+		Attributes:  []api.Attribute{api.Attribute{Name: "attr1", Value: "val1"}},
+	})
+	if err != nil {
+		t.Fatalf("Failed to register user1: %s", err)
+	}
+	// Enroll user1 with an explicit OU.  Make sure it is ignored.
+	eresp, err = client.Enroll(&api.EnrollmentRequest{
+		Name:   "user1",
+		Secret: rr.Secret,
+		CSR:    &api.CSRInfo{Names: []csr.Name{csr.Name{OU: "foobar"}}},
+	})
+	if err != nil {
+		t.Fatalf("Failed to enroll user1: %s", err)
+	}
+	user1 = eresp.Identity
+	// Make sure the OUs are correct based on the identity type and affiliation
+	cert, err := user1.GetECert().GetX509Cert()
+	if err != nil {
+		assert.NoErrorf(t, err, "Failed to get user1's enrollment certificate")
+	} else {
+		ouPath := strings.Join(cert.Subject.OrganizationalUnit, ".")
+		assert.Equal(t, "user.hyperledger.fabric.security", ouPath, "Invalid OU path in certificate")
+	}
+	// User1 get's batch of tcerts
+	_, err = user1.GetTCertBatch(&api.GetTCertBatchRequest{Count: 1, AttrNames: []string{"attr1"}})
+	if err != nil {
+		t.Fatalf("Failed to get tcerts for user1: %s", err)
+	}
+}
+
 func TestSRVRootServer(t *testing.T) {
 	var err error
 	var admin, user1 *Identity
