@@ -36,6 +36,7 @@ import (
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric/bccsp"
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
+	"github.com/tjfoc/gmsm/sm2"
 )
 
 var (
@@ -107,14 +108,14 @@ type Mgr struct {
 	MaxAllowedBatchSize int
 }
 
-// GetBatch gets a batch of TCerts
-// @parameter req Is the TCert batch request
-// @parameter ecert Is the enrollment certificate of the caller
+// GetBatch 获取一批TCert
+// @parameter req 是TCert批处理请求
+// @parameter ecert 是调用者的的登记(enrollment)证书
 func (tm *Mgr) GetBatch(req *GetTCertBatchRequest, ecert *x509.Certificate) (*api.GetTCertBatchResponse, error) {
 
 	log.Debugf("GetBatch req=%+v", req)
 
-	// Set numTCertsInBatch to the number of TCerts to get.
+	//将numTCertsInBatch设置为要得到的tcert的数量
 	// If 0 are requested, retrieve the maximum allowable;
 	// otherwise, retrieve the number requested it not too many.
 	var numTCertsInBatch int
@@ -201,9 +202,21 @@ func (tm *Mgr) GetBatch(req *GetTCertBatchRequest, ecert *x509.Certificate) (*ap
 		template.Extensions = extensions
 		template.ExtraExtensions = extensions
 		template.SerialNumber = tcertid
+		//sm2.CreateCertificate(rand.Reader, template, tm.CACert, &txPub, tm.CAKey)
 
-		raw, err := x509.CreateCertificate(rand.Reader, template, tm.CACert, &txPub, tm.CAKey)
+		var (
+			raw []byte
+			err error
+		)
+		if util.IsGMConfig() {
+			sm2Template := util.ParseX509Certificate2Sm2(template)
+			sm2CACert := util.ParseX509Certificate2Sm2(template)
+			raw, err = sm2.CreateCertificate(rand.Reader, sm2Template, sm2CACert, &txPub, tm.CAKey)
+		} else {
+			raw, err = x509.CreateCertificate(rand.Reader, template, tm.CACert, &txPub, tm.CAKey)
+		}
 		if err != nil {
+			//TODO: here comes the error
 			return nil, fmt.Errorf("Failed in TCert x509.CreateCertificate: %s", err)
 		}
 
