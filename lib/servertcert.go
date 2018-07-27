@@ -89,10 +89,9 @@ func tcertHandler(ctx *serverRequestContext) (interface{}, error) {
 func genRootKey(csp bccsp.BCCSP) (bccsp.Key, error) {
 	var opts bccsp.KeyGenOpts
 	if IsGMConfig() {
-		//
 		opts = &bccsp.GMSM4KeyGenOpts{Temporary: true}
 	} else {
-		opts = &bccsp.ECDSAKeyGenOpts{Temporary: true}
+		opts = &bccsp.AES256KeyGenOpts{Temporary: true}
 	}
 	return csp.KeyGen(opts)
 }

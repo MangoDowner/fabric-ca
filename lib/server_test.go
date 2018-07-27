@@ -183,11 +183,7 @@ func TestGM(t *testing.T) {
 			t.Errorf("RemoveAll failed: %s", err)
 		}
 	}()
-	err = server.Start()
-	t.Logf("Starting duplicate CA server: %s", err)
-	if err == nil {
-		t.Fatalf("Server start should have failed")
-	}
+
 
 	// Enroll request
 	client := getRootClient()
@@ -213,7 +209,7 @@ func TestGM(t *testing.T) {
 	eresp, err = client.Enroll(&api.EnrollmentRequest{
 		Name:   "user1",
 		Secret: rr.Secret,
-		CSR:    &api.CSRInfo{Names: []csr.Name{csr.Name{OU: "foobar"}}},
+		CSR:    &api.CSRInfo{Names: []csr.Name{csr.Name{OU: "user.hyperledger.fabric.security"}}},
 	})
 	if err != nil {
 		t.Fatalf("Failed to enroll user1: %s", err)
