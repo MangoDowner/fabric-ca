@@ -45,8 +45,17 @@ var clientAuthTypes = map[string]tls.ClientAuthType{
 	"requireandverifyclientcert": tls.RequireAndVerifyClientCert,
 }
 
-// GetCertID returns both the serial number and AKI (Authority Key ID) for the certificate
+// GetCertID 返回证书的序列号(SerialNumber)和AKI(授权密钥ID:Authority Key ID)
 func GetCertID(bytes []byte) (string, string, error) {
+	if IsGMConfig() {
+		cert, err := BytesToSm2Cert(bytes)
+		if err != nil {
+			return "", "", err
+		}
+		serial := util.GetSerialAsHex(cert.SerialNumber)
+		aki := hex.EncodeToString(cert.AuthorityKeyId)
+		return serial, aki, nil
+	}
 	cert, err := BytesToX509Cert(bytes)
 	if err != nil {
 		return "", "", err
@@ -63,6 +72,19 @@ func BytesToX509Cert(bytes []byte) (*x509.Certificate, error) {
 		bytes = dcert.Bytes
 	}
 	cert, err := x509.ParseCertificate(bytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "Buffer was neither PEM nor DER encoding")
+	}
+	return cert, err
+}
+
+// BytesToSm2Cert converts bytes (PEM or DER) to an Sm2 certificate
+func BytesToSm2Cert(bytes []byte) (*sm2.Certificate, error) {
+	dcert, _ := pem.Decode(bytes)
+	if dcert != nil {
+		bytes = dcert.Bytes
+	}
+	cert, err := sm2.ParseCertificate(bytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "Buffer was neither PEM nor DER encoding")
 	}
