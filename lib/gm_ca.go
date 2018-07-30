@@ -28,19 +28,6 @@ import (
 
 //证书签名
 func SignCert(req signer.SignRequest, ca *CA) (cert []byte, err error) {
-	/*csr := parseCertificateRequest()
-	cert, err := sm2.CreateCertificateToMem(template, rootca, csr.pubkey, rootca.privkey)
-	sm2Cert, err := sm2.parseCertificateFromMem(cert)
-
-	var certRecord = certdb.CertificateRecord{
-		Serial:  sm2Cert.SerialNumber.String(),
-		AKI:     hex.EncodeToString(sm2Cert.AuthorityKeyId),
-		CALabel: req.Label,
-		Status:  "good",
-		Expiry:  sm2Cert.NotAfter,
-		PEM:     string(cert),
-	}*/
-
 	block, _ := pem.Decode([]byte(req.Request))
 	if block == nil {
 		return nil, fmt.Errorf("decode error")
