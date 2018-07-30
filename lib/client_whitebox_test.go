@@ -17,8 +17,6 @@ package lib
 
 import (
 	"crypto/rand"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -36,6 +34,8 @@ import (
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/tjfoc/gmsm/sm2"
+	"encoding/pem"
 )
 
 const (
@@ -107,6 +107,7 @@ func TestCWBTLSClientAuth(t *testing.T) {
 	}
 	id := eresp.Identity
 	testImpersonation(id, t)
+	log.Debug("++++++++++++++++++++++++++++++++++++++++++++WANGJIAER++++++")
 	testMasqueradeEnroll(t, client, id)
 
 	// Register and enroll user to test reenrolling while masquerading
@@ -167,7 +168,10 @@ func TestCWBTLSClientAuth(t *testing.T) {
 	client.Config.TLS.CertFiles = []string{"../server/ca-cert.pem"}
 	// Reinialize the http client with updated config and re-enroll over HTTPS
 	err = client.initHTTPClient()
+	fmt.Println("ERR1:", err)
 	resp, err := id.Reenroll(&api.ReenrollmentRequest{})
+	fmt.Println("ERR2:", err)
+
 	if err != nil {
 		server.Stop()
 		t.Fatalf("Failed to reenroll over HTTPS: %s", err)
@@ -268,7 +272,9 @@ func enrollAndCheck(t *testing.T, c *Client, body []byte, authHeader string) {
 // with the same serial and AKI as this identity.
 func testImpersonation(id *Identity, t *testing.T) {
 	// test as a fake user trying to impersonate admin give only the cert
-	cert, err := BytesToX509Cert(id.GetECert().Cert())
+
+	//cert, err := BytesToX509Cert(id.GetECert().Cert())
+	cert, err := BytesToSm2Cert(id.GetECert().Cert())
 	if err != nil {
 		t.Fatalf("Failed to convert admin's cert: %s", err)
 	}
@@ -286,9 +292,9 @@ func testImpersonation(id *Identity, t *testing.T) {
 		}
 	}()
 
-	privateKey, err := csp.KeyGen(&bccsp.ECDSAKeyGenOpts{Temporary: false})
+	privateKey, err := csp.KeyGen(&bccsp.GMSM2KeyGenOpts{Temporary: false})
 	if err != nil {
-		t.Fatalf("Failed generating ECDSA key [%s]", err)
+		t.Fatalf("Failed generating GMSM2 key [%s]", err)
 	}
 	cspSigner, err := cspsigner.New(csp, privateKey)
 	if err != nil {
@@ -297,7 +303,7 @@ func testImpersonation(id *Identity, t *testing.T) {
 	// Export the public key
 	publicKey, err := privateKey.PublicKey()
 	if err != nil {
-		t.Fatalf("Failed getting ECDSA public key: %s", err)
+		t.Fatalf("Failed getting GMSM2 public key: %s", err)
 	}
 	pkRaw, err := publicKey.Bytes()
 	if err != nil {
@@ -307,7 +313,7 @@ func testImpersonation(id *Identity, t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed converting raw to ECDSA.PublicKey [%s]", err)
 	}
-	fakeCertBytes, err := x509.CreateCertificate(rand.Reader, cert, cert, pub, cspSigner)
+	fakeCertBytes, err := sm2.CreateCertificate(rand.Reader, cert, cert, pub, cspSigner)
 	if err != nil {
 		t.Fatalf("Failed to create self-signed fake cert: %s", err)
 	}
