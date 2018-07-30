@@ -28,6 +28,9 @@ import (
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
+	"encoding/pem"
+	"github.com/tjfoc/gmsm/sm2"
+	"github.com/hyperledger/fabric/bccsp/gm"
 )
 
 // ServerTLSConfig defines key material for a TLS server
@@ -94,7 +97,8 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, err
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to read '%s'", cacert)
 		}
-		ok := rootCAPool.AppendCertsFromPEM(caCert)
+		ok := AppendCertsFromPEM(rootCAPool, caCert)
+		//ok := rootCAPool.AppendCertsFromPEM(caCert)
 		if !ok {
 			return nil, errors.Errorf("Failed to process certificate from file %s", cacert)
 		}
@@ -106,6 +110,35 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, err
 	}
 
 	return config, nil
+}
+
+
+// AppendCertsFromPEM attempts to parse a series of PEM encoded certificates.
+// It appends any certificates found to s and reports whether any certificates
+// were successfully parsed.
+//
+// On many Linux systems, /etc/ssl/cert.pem will contain the system wide set
+// of root CAs in a format suitable for this function.
+func AppendCertsFromPEM(s *x509.CertPool, pemCerts []byte) (ok bool) {
+	for len(pemCerts) > 0 {
+		var block *pem.Block
+		block, pemCerts = pem.Decode(pemCerts)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			continue
+		}
+		sm2Cert, err := sm2.ParseCertificate(block.Bytes)
+		if err != nil {
+			continue
+		}
+		cert := gm.ParseSm2Certificate2X509(sm2Cert)
+		s.AddCert(cert)
+		ok = true
+	}
+
+	return
 }
 
 // AbsTLSClient makes TLS client files absolute
