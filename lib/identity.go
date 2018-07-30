@@ -190,7 +190,7 @@ func (i *Identity) RevokeSelf() (*api.RevocationResponse, error) {
 	return i.Revoke(req)
 }
 
-// GenCRL generates CRL
+// GenCRL 产生CRL
 func (i *Identity) GenCRL(req *api.GenCRLRequest) (*api.GenCRLResponse, error) {
 	log.Debugf("Entering identity.GenCRL %+v", req)
 	reqBody, err := util.Marshal(req, "GenCRLRequest")

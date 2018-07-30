@@ -1045,6 +1045,9 @@ func (ca *CA) getCACertExpiry() (time.Time, error) {
 }
 
 func canSignCRL(cert *x509.Certificate) bool {
+	log.Debug("CAN SIGN CURL ___________________")
+	log.Debug(cert.KeyUsage)
+	log.Debug(x509.KeyUsageCRLSign)
 	return cert.KeyUsage&x509.KeyUsageCRLSign != 0
 }
 

@@ -30,6 +30,7 @@ import (
 	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/pkg/errors"
+	"github.com/tjfoc/gmsm/sm2"
 )
 
 const (
@@ -90,7 +91,7 @@ func genCRLHandler(ctx *serverRequestContext) (interface{}, error) {
 	return resp, nil
 }
 
-// GenCRL will generate CRL
+// GenCRL 产生CRL
 func genCRL(ca *CA, req api.GenCRLRequest) ([]byte, error) {
 	var err error
 	if !req.RevokedBefore.IsZero() && req.RevokedAfter.After(req.RevokedBefore) {
@@ -109,12 +110,21 @@ func genCRL(ca *CA, req api.GenCRLRequest) ([]byte, error) {
 		log.Errorf("Failed to get revoked certificates from the database: %s", err)
 		return nil, newHTTPErr(500, ErrRevokedCertsFromDB, "Failed to get revoked certificates")
 	}
-
-	caCert, err := getCACert(ca)
+	var caCert *x509.Certificate
+	if IsGMConfig() {
+		sm2Cert, err := getSm2CACert(ca)
+		if err != nil {
+			log.Errorf("Failed to get certficate for CA '%s': %s", ca.HomeDir, err)
+		}
+		caCert = util.ParseSm2Certificate2X509(sm2Cert)
+	} else {
+		caCert, err = getCACert(ca)
+	}
 	if err != nil {
 		log.Errorf("Failed to get certficate for CA '%s': %s", ca.HomeDir, err)
 		return nil, newHTTPErr(500, ErrGetCACert, "Failed to get certficate for CA '%s'", ca.HomeDir)
 	}
+
 
 	if !canSignCRL(caCert) {
 		return nil, newHTTPErr(500, ErrNoCrlSignAuth,
@@ -151,6 +161,7 @@ func genCRL(ca *CA, req api.GenCRLRequest) ([]byte, error) {
 	return pem.EncodeToMemory(blk), nil
 }
 
+// 获取指定CA的sm2证书
 func getCACert(ca *CA) (*x509.Certificate, error) {
 	// Get CA certificate
 	caCertBytes, err := ioutil.ReadFile(ca.Config.CA.Certfile)
@@ -158,6 +169,20 @@ func getCACert(ca *CA) (*x509.Certificate, error) {
 		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to read certificate for the CA '%s'", ca.HomeDir))
 	}
 	caCert, err := BytesToX509Cert(caCertBytes)
+	if err != nil {
+		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to get certificate for the CA '%s'", ca.HomeDir))
+	}
+	return caCert, nil
+}
+
+// 获取指定CA的x509证书
+func getSm2CACert(ca *CA) (*sm2.Certificate, error) {
+	// Get CA certificates
+	caCertBytes, err := ioutil.ReadFile(ca.Config.CA.Certfile)
+	if err != nil {
+		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to read certificate for the CA '%s'", ca.HomeDir))
+	}
+	caCert, err := BytesToSm2Cert(caCertBytes)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to get certificate for the CA '%s'", ca.HomeDir))
 	}
