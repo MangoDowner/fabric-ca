@@ -26,6 +26,7 @@ import (
 	"github.com/hyperledger/fabric-ca/util"
 )
 
+// override: cfssl.local:Sign
 //证书签名
 func SignCert(req signer.SignRequest, ca *CA) (cert []byte, err error) {
 	block, _ := pem.Decode([]byte(req.Request))
@@ -85,6 +86,8 @@ func NewFromSigner(key bccsp.Key, req *csr.CertificateRequest, priv crypto.Signe
 	if err != nil {
 		return nil, err
 	}
+	log.Debug("[NewFromSigner]")
+	log.Debug(sm2Template.KeyUsage)
 	//log.Infof("PublicKey Type是 %T, sm2Template Type是 %T---", sm2Template.PublicKey, sm2Template)
 	cert, err = gm.CreateCertificateToMem(sm2Template, sm2Template, key)
 	return
@@ -191,9 +194,11 @@ func parseCertificateRequest(csrBytes []byte) (template *sm2.Certificate, err er
 
 	//log.Infof("---[gmca:parseCertificateRequest]加密算法是 %v, 公钥类型是 :%T---",
 	//	template.SignatureAlgorithm, template.PublicKey)
-
+	//TODO: KeyUsage未定义
+	template.KeyUsage = sm2.KeyUsage(96)
 	template.NotBefore = time.Now()
 	template.NotAfter = time.Now().Add(time.Hour * 1000)
+
 	for _, val := range csrv.Extensions {
 		// Check the CSR for the X.509 BasicConstraints (RFC 5280, 4.2.1.9)
 		// extension and append to template if necessary
@@ -272,3 +277,19 @@ func ParseX509Certificate2Sm2(x509Cert *x509.Certificate) *sm2.Certificate {
 	}
 	return sm2cert
 }
+
+// Usages parses the list of key uses in the profile, translating them
+// to a list of X.509 key usages and extended key usages.  The unknown
+// uses are collected into a slice that is also returned.
+//func Usages() (ku sm2.KeyUsage, eku []x509.ExtKeyUsage, unk []string) {
+//	for _, keyUse := range p.Usage {
+//		if kuse, ok := KeyUsage[keyUse]; ok {
+//			ku |= kuse
+//		} else if ekuse, ok := ExtKeyUsage[keyUse]; ok {
+//			eku = append(eku, ekuse)
+//		} else {
+//			unk = append(unk, keyUse)
+//		}
+//	}
+//	return
+//}

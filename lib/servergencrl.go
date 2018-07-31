@@ -151,7 +151,6 @@ func genCRL(ca *CA, req api.GenCRLRequest) ([]byte, error) {
 		}
 		revokedCerts = append(revokedCerts, revokedCert)
 	}
-
 	crl, err := crl.CreateGenericCRL(revokedCerts, signer, caCert, expiry)
 	if err != nil {
 		log.Errorf("Failed to generate CRL for CA '%s': %s", ca.HomeDir, err)
@@ -161,7 +160,7 @@ func genCRL(ca *CA, req api.GenCRLRequest) ([]byte, error) {
 	return pem.EncodeToMemory(blk), nil
 }
 
-// 获取指定CA的sm2证书
+// 获取指定CA的x509证书
 func getCACert(ca *CA) (*x509.Certificate, error) {
 	// Get CA certificate
 	caCertBytes, err := ioutil.ReadFile(ca.Config.CA.Certfile)
@@ -175,7 +174,7 @@ func getCACert(ca *CA) (*x509.Certificate, error) {
 	return caCert, nil
 }
 
-// 获取指定CA的x509证书
+// 获取指定CA的sm2证书
 func getSm2CACert(ca *CA) (*sm2.Certificate, error) {
 	// Get CA certificates
 	caCertBytes, err := ioutil.ReadFile(ca.Config.CA.Certfile)

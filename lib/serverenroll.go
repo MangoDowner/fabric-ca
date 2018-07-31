@@ -162,6 +162,7 @@ func handleEnroll(ctx *serverRequestContext, id string) (interface{}, error) {
 		req.Extensions = append(req.Extensions, *ext)
 	}
 	// Sign the certificate
+	//cert, err := ca.enrollSigner.Sign(req.SignRequest)
 	cert, err := SignCert(req.SignRequest, ca)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Certificate signing failure")
