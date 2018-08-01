@@ -139,7 +139,9 @@ func SignerAlgo(priv crypto.Signer) sm2.SignatureAlgorithm {
 	case *sm2.PublicKey:
 		switch pub.Curve {
 		case sm2.P256Sm2():
-			return sm2.SM2WithSHA256
+			// FIXME: 只是改这个有用么...
+			// 感觉没啥用，如果使用ECDSAWithSHA256也会返回"ecdsa-with-SHA256"
+			return sm2.SM2WithSM3
 		default:
 			return sm2.SM2WithSHA1
 		}
