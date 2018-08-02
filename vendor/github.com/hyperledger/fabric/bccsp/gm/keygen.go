@@ -20,6 +20,7 @@ import (
 
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/hyperledger/fabric/bccsp"
+	"crypto/rand"
 )
 
 //定义国密SM2 keygen 结构体，实现 KeyGenerator 接口
@@ -28,7 +29,8 @@ type gmsm2KeyGenerator struct {
 
 func (gm *gmsm2KeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (k bccsp.Key, err error) {
 	//调用 SM2的注册证书方法
-	privKey, err := sm2.GenerateKey()
+	curve := sm2.P256Sm2()
+	privKey, err := sm2.GenerateKey(curve, rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("Failed generating GMSM2 key  [%s]", err)
 	}

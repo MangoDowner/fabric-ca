@@ -132,12 +132,13 @@ func randFieldElement(c elliptic.Curve, rand io.Reader) (k *big.Int, err error) 
 	return
 }
 
-func GenerateKey() (*PrivateKey, error) {
-	c := P256Sm2()
-	k, err := randFieldElement(c, rand.Reader)
+// GenerateKey generates a public and private key pair.
+func GenerateKey(c elliptic.Curve, rand io.Reader) (*PrivateKey, error) {
+	k, err := randFieldElement(c, rand)
 	if err != nil {
 		return nil, err
 	}
+
 	priv := new(PrivateKey)
 	priv.PublicKey.Curve = c
 	priv.D = k
