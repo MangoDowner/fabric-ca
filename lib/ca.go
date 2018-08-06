@@ -53,6 +53,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/hyperledger/fabric/bccsp/gm"
+	oinitca "github.com/hyperledger/fabric-ca/override/cfssl/initca"
 )
 
 const (
@@ -358,13 +359,13 @@ func (ca *CA) getCACert() (cert []byte, err error) {
 		}
 		log.Debugf("Root CA certificate request: %+v", req)
 		// Generate the key/signer
-		key, cspSigner, err := util.BCCSPKeyRequestGenerate(&req, ca.csp)
+		_, cspSigner, err := util.BCCSPKeyRequestGenerate(&req, ca.csp)
 		if err != nil {
 			return nil, err
 		}
 		// Call CFSSL to initialize the CA
 		if IsGMConfig() {
-			cert, err = NewFromSigner(key, &req, cspSigner)
+			cert, _, err = oinitca.NewFromSigner(&req, cspSigner)
 		} else {
 			cert, _, err = initca.NewFromSigner(&req, cspSigner)
 		}
