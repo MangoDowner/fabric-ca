@@ -23,8 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/cloudflare/cfssl/config"
+	oconfig "github.com/hyperledger/fabric-ca/override/cfssl/config"
 	"github.com/cloudflare/cfssl/csr"
 	cferr "github.com/cloudflare/cfssl/errors"
 	"github.com/cloudflare/cfssl/log"
@@ -279,7 +278,7 @@ func isRequestForCASigningCert(csrReq *x509.CertificateRequest, ca *CA, profile 
 	return false, nil
 }
 
-func getSigningProfile(ca *CA, profile string) *config.SigningProfile {
+func getSigningProfile(ca *CA, profile string) *oconfig.SigningProfile {
 	if profile == "" {
 		return ca.Config.Signing.Default
 	}

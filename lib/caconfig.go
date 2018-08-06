@@ -19,13 +19,13 @@ package lib
 import (
 	"time"
 
-	"github.com/cloudflare/cfssl/config"
 	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/lib/dbutil"
 	"github.com/hyperledger/fabric-ca/lib/ldap"
 	"github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric/bccsp/factory"
+	oconfig "github.com/hyperledger/fabric-ca/override/cfssl/config"
 )
 
 const (
@@ -91,7 +91,7 @@ type CAConfig struct {
 	Version      string `skip:"true"`
 	Cfg          cfgOptions
 	CA           CAInfo
-	Signing      *config.Signing
+	Signing      *oconfig.Signing
 	CSR          api.CSRInfo
 	Registry     CAConfigRegistry
 	Affiliations map[string]interface{}

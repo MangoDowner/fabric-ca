@@ -45,8 +45,6 @@ import (
 	stls "github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/spf13/viper"
-	cfcsr "github.com/cloudflare/cfssl/csr"
-
 )
 
 const (
@@ -500,14 +498,14 @@ func (s *Server) listenAndServe() (err error) {
 	}
 	addr := net.JoinHostPort(c.Address, strconv.Itoa(c.Port))
 	var addrStr string
-
 	if c.TLS.Enabled {
-		log.Debug("TLS is enabled")
+		log.Info("TLS is enabled")
 		addrStr = fmt.Sprintf("https://%s", addr)
 		// 如果key文件被指定并且它不存在或者它相应的证书文件不存在, 需要返回错误，而不是启动服务器
 		// TLS密钥文件是在这种情形下被指定的:用户希望服务器使用定制的tls密钥和cert，并且不希望服务器自动生成它自己的。
 		// 所以,当指定钥匙文件时，它必须存在于文件系统中
 		if c.TLS.KeyFile != "" {
+
 			if !util.FileExists(c.TLS.KeyFile) {
 				return fmt.Errorf("File specified by 'tls.keyfile' does not exist: %s", c.TLS.KeyFile)
 			}
@@ -751,29 +749,7 @@ func (s *Server) autoGenerateTLSCertificateKey() error {
 		Profile: "tls",
 		Request: string(csr),
 	}
-	// Use default CA to get back signed TLS certificate
-
-	var cert []byte
-	if IsGMConfig() {
-		// Generate the key/signer
-		csr := &s.CA.Config.CSR
-		req := cfcsr.CertificateRequest{
-			CN:           csr.CN,
-			Names:        csr.Names,
-			Hosts:        csr.Hosts,
-			KeyRequest:   &cfcsr.BasicKeyRequest{A: csr.KeyRequest.Algo, S: csr.KeyRequest.Size},
-			CA:           csr.CA,
-			SerialNumber: csr.SerialNumber,
-		}
-		key, cspSigner, err := util.BCCSPKeyRequestGenerate(&req, s.csp)
-		if err != nil {
-			return fmt.Errorf("BCCSPKeyRequestGenerate ERROR: %s", err)
-		}
-		cert, err = NewFromSigner(key, &req, cspSigner)
-	} else {
-		cert, err = s.CA.enrollSigner.Sign(req)
-	}
-	//cert, err := s.CA.enrollSigner.Sign(req)
+	cert, err := s.CA.enrollSigner.Sign(req)
 	if err != nil {
 		//TODO: here comes the error!
 		return fmt.Errorf("Failed to generate TLS certificate: %s", err)

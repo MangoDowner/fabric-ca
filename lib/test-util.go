@@ -32,6 +32,7 @@ import (
 	"testing"
 	"time"
 
+	oconfig "github.com/hyperledger/fabric-ca/override/cfssl/config"
 	"github.com/cloudflare/cfssl/config"
 )
 
@@ -83,12 +84,12 @@ func TestGetServer2(deleteHome bool, port int, home, parentURL string, maxEnroll
 		"org1":      nil,
 		"org2dept1": nil,
 	}
-	profiles := map[string]*config.SigningProfile{
-		"tls": &config.SigningProfile{
+	profiles := map[string]*oconfig.SigningProfile{
+		"tls": &oconfig.SigningProfile{
 			Usage:        []string{"signing", "key encipherment", "server auth", "client auth", "key agreement"},
 			ExpiryString: "8760h",
 		},
-		"ca": &config.SigningProfile{
+		"ca": &oconfig.SigningProfile{
 			Usage:        []string{"cert sign", "crl sign"},
 			ExpiryString: "8760h",
 			CAConstraint: config.CAConstraint{
@@ -97,7 +98,7 @@ func TestGetServer2(deleteHome bool, port int, home, parentURL string, maxEnroll
 			},
 		},
 	}
-	defaultProfile := &config.SigningProfile{
+	defaultProfile := &oconfig.SigningProfile{
 		Usage:        []string{"cert sign"},
 		ExpiryString: "8760h",
 	}
@@ -117,7 +118,7 @@ func TestGetServer2(deleteHome bool, port int, home, parentURL string, maxEnroll
 				Registry: CAConfigRegistry{
 					MaxEnrollments: maxEnroll,
 				},
-				Signing: &config.Signing{
+				Signing: &oconfig.Signing{
 					Profiles: profiles,
 					Default:  defaultProfile,
 				},

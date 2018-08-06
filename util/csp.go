@@ -33,13 +33,13 @@ import (
 	"github.com/pkg/errors"
 
 	_ "github.com/cloudflare/cfssl/cli" // for ocspSignerFromConfig
-	"github.com/cloudflare/cfssl/config"
+	oconfig "github.com/hyperledger/fabric-ca/override/cfssl/config"
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/helpers"
 	"github.com/cloudflare/cfssl/log"
 	_ "github.com/cloudflare/cfssl/ocsp" // for ocspSignerFromConfig
-	"github.com/cloudflare/cfssl/signer"
-	"github.com/cloudflare/cfssl/signer/local"
+	osigner "github.com/hyperledger/fabric-ca/override/cfssl/signer"
+	olocal "github.com/hyperledger/fabric-ca/override/cfssl/signer/local"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
@@ -91,7 +91,7 @@ func makeFileNamesAbsolute(opts *factory.FactoryOpts, homeDir string) error {
 
 // ccspBackedSigner尝试使用csp bccsp.BCCSP创建一个签名者(signer)。
 // 这个csp可以是SW（golang加密）PKCS11或者任何bccsp-兼容库配置
-func BccspBackedSigner(caFile, keyFile string, policy *config.Signing, csp bccsp.BCCSP) (signer.Signer, error) {
+func BccspBackedSigner(caFile, keyFile string, policy *oconfig.Signing, csp bccsp.BCCSP) (osigner.Signer, error) {
 	//log.Infof("---[csp:BccspBackedSigner]caFile路径:%s", caFile)
 	_, cspSigner, parsedCa, err := GetSignerFromCertFile(caFile, csp)
 	//log.Infof("---[csp:BccspBackedSigner]调用 GetSignerFromCertFile 错误: %s", err)
@@ -113,8 +113,8 @@ func BccspBackedSigner(caFile, keyFile string, policy *config.Signing, csp bccsp
 		}
 		cspSigner = signer
 	}
-
-	signer, err := local.NewSigner(cspSigner, parsedCa, signer.DefaultSigAlgo(cspSigner), policy)
+	sm2Cert := ParseX509Certificate2Sm2(parsedCa)
+	signer, err := olocal.NewSigner(cspSigner, sm2Cert, osigner.DefaultSigAlgo(cspSigner), policy)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new signer: %s", err.Error())
 	}

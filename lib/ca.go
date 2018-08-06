@@ -38,8 +38,8 @@ import (
 	cfcsr "github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/initca"
 	"github.com/cloudflare/cfssl/log"
-	"github.com/cloudflare/cfssl/signer"
-	cflocalsigner "github.com/cloudflare/cfssl/signer/local"
+	osigner "github.com/hyperledger/fabric-ca/override/cfssl/signer"
+	ocflocalsigner "github.com/hyperledger/fabric-ca/override/cfssl/signer/local"
 	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/lib/dbutil"
 	"github.com/hyperledger/fabric-ca/lib/ldap"
@@ -53,6 +53,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/hyperledger/fabric/bccsp/gm"
+	oconfig "github.com/hyperledger/fabric-ca/override/cfssl/config"
 	oinitca "github.com/hyperledger/fabric-ca/override/cfssl/initca"
 )
 
@@ -91,7 +92,7 @@ type CA struct {
 	// The user registry
 	registry spi.UserRegistry
 	// The signer used for enrollment
-	enrollSigner signer.Signer
+	enrollSigner osigner.Signer
 	// The options to use in verifying a signature in token-based authentication
 	verifyOptions *sm2.VerifyOptions
 	// The attribute manager
@@ -458,11 +459,11 @@ func (ca *CA) initConfig() (err error) {
 		cfg.CSR.CA.Expiry = defaultRootCACertificateExpiration
 	}
 	if cfg.Signing == nil {
-		cfg.Signing = &config.Signing{}
+		cfg.Signing = &oconfig.Signing{}
 	}
 	cs := cfg.Signing
 	if cs.Profiles == nil {
-		cs.Profiles = make(map[string]*config.SigningProfile)
+		cs.Profiles = make(map[string]*oconfig.SigningProfile)
 	}
 	caProfile := cs.Profiles["ca"]
 	initSigningProfile(&caProfile,
@@ -724,13 +725,13 @@ func (ca *CA) initEnrollmentSigner() (err error) {
 	c := ca.Config
 
 	// If there is a config, use its signing policy. Otherwise create a default policy.
-	var policy *config.Signing
+	var policy *oconfig.Signing
 	if c.Signing != nil {
 		policy = c.Signing
 	} else {
-		policy = &config.Signing{
-			Profiles: map[string]*config.SigningProfile{},
-			Default:  config.DefaultConfig(),
+		policy = &oconfig.Signing{
+			Profiles: map[string]*oconfig.SigningProfile{},
+			Default:  oconfig.DefaultConfig(),
 		}
 		policy.Default.CAConstraint.IsCA = true
 	}
@@ -1029,7 +1030,7 @@ func (ca *CA) validateCertAndKey(certFile string, keyFile string) error {
 // Returns expiration of the CA certificate
 func (ca *CA) getCACertExpiry() (time.Time, error) {
 	var caexpiry time.Time
-	signer, ok := ca.enrollSigner.(*cflocalsigner.Signer)
+	signer, ok := ca.enrollSigner.(*ocflocalsigner.Signer)
 	if ok {
 		cacert, err := signer.Certificate("", "ca")
 		if err != nil {
@@ -1290,10 +1291,10 @@ func parseDuration(str string) time.Duration {
 	return d
 }
 
-func initSigningProfile(spp **config.SigningProfile, expiry time.Duration, isCA bool) {
+func initSigningProfile(spp **oconfig.SigningProfile, expiry time.Duration, isCA bool) {
 	sp := *spp
 	if sp == nil {
-		sp = &config.SigningProfile{CAConstraint: config.CAConstraint{IsCA: isCA}}
+		sp = &oconfig.SigningProfile{CAConstraint: config.CAConstraint{IsCA: isCA}}
 		*spp = sp
 	}
 	if sp.Usage == nil {

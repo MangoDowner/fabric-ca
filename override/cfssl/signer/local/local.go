@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"github.com/cloudflare/cfssl/info"
 	"bytes"
+	ohelpers "github.com/hyperledger/fabric-ca/override/cfssl/helpers"
 )
 
 // Signer contains a signer that uses the standard library to
@@ -264,13 +265,14 @@ func (s *Signer) Sign(req signer.SignRequest) (cert []byte, err error) {
 	// Get the AKI from signedCert.  This is required to support Go 1.9+.
 	// In prior versions of Go, x509.CreateCertificate updated the
 	// AuthorityKeyId of certTBS.
-	parsedCert, _ := helpers.ParseCertificatePEM(signedCert)
+	parsedCert, _ := ohelpers.ParseCertificatePEM(signedCert)
 
 	if s.dbAccessor != nil {
 		var certRecord = certdb.CertificateRecord{
 			Serial: certTBS.SerialNumber.String(),
 			// this relies on the specific behavior of x509.CreateCertificate
 			// which sets the AuthorityKeyId from the signer's SubjectKeyId
+			// FIXME: chucuoi!!!!
 			AKI:     hex.EncodeToString(parsedCert.AuthorityKeyId),
 			CALabel: req.Label,
 			Status:  "good",
