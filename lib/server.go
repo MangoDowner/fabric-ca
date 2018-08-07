@@ -17,8 +17,7 @@ limitations under the License.
 package lib
 
 import (
-	"crypto/tls"
-	"crypto/x509"
+	"github.com/tjfoc/gmtls"
 	"crypto/x509/pkix"
 	"fmt"
 	"io"
@@ -45,6 +44,7 @@ import (
 	stls "github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/spf13/viper"
+	"github.com/tjfoc/gmsm/sm2"
 )
 
 const (
@@ -484,7 +484,7 @@ func (s *Server) registerHandler(path string, se *serverEndpoint) {
 func (s *Server) listenAndServe() (err error) {
 
 	var listener net.Listener
-	var clientAuth tls.ClientAuthType
+	var clientAuth gmtls.ClientAuthType
 	var ok bool
 
 	c := s.Config
@@ -521,7 +521,7 @@ func (s *Server) listenAndServe() (err error) {
 		}
 		log.Debugf("TLS Certificate: %s, TLS Key: %s", c.TLS.CertFile, c.TLS.KeyFile)
 
-		cer, err := util.LoadX509KeyPair(c.TLS.CertFile, c.TLS.KeyFile, s.csp)
+		cer, err := util.LoadSm2KeyPair(c.TLS.CertFile, c.TLS.KeyFile, s.csp)
 		if err != nil {
 			return err
 		}
@@ -533,11 +533,12 @@ func (s *Server) listenAndServe() (err error) {
 		log.Debugf("Client authentication type requested: %s", c.TLS.ClientAuth.Type)
 
 		authType := strings.ToLower(c.TLS.ClientAuth.Type)
+
 		if clientAuth, ok = clientAuthTypes[authType]; !ok {
 			return errors.New("Invalid client auth type provided")
 		}
 
-		var certPool *x509.CertPool
+		var certPool *sm2.CertPool
 		if authType != defaultClientAuth {
 			certPool, err = LoadPEMCertPool(c.TLS.ClientAuth.CertFiles)
 			if err != nil {
@@ -545,15 +546,15 @@ func (s *Server) listenAndServe() (err error) {
 			}
 		}
 
-		config := &tls.Config{
-			Certificates: []tls.Certificate{*cer},
+		config := &gmtls.Config{
+			Certificates: []gmtls.Certificate{*cer},
 			ClientAuth:   clientAuth,
 			ClientCAs:    certPool,
-			MinVersion:   tls.VersionTLS12,
-			MaxVersion:   tls.VersionTLS12,
+			MinVersion:   gmtls.VersionTLS12,
+			MaxVersion:   gmtls.VersionTLS12,
 		}
 
-		listener, err = tls.Listen("tcp", addr, config)
+		listener, err = gmtls.Listen("tcp", addr, config)
 		if err != nil {
 			return errors.Wrapf(err, "TLS listen failed for %s", addrStr)
 		}

@@ -1,13 +1,13 @@
 package config
 
 import (
-	"crypto/tls"
 	"github.com/cloudflare/cfssl/auth"
 	"github.com/cloudflare/cfssl/config"
 	"github.com/tjfoc/gmsm/sm2"
 	"regexp"
 	"time"
 	"github.com/cloudflare/cfssl/helpers"
+	"github.com/tjfoc/gmtls"
 )
 
 // KeyUsage contains a mapping of string names to key usages.
@@ -92,7 +92,7 @@ type SigningProfile struct {
 	RemoteProvider              auth.Provider
 	RemoteServer                string
 	RemoteCAs                   *sm2.CertPool
-	ClientCert                  *tls.Certificate
+	ClientCert                  *gmtls.Certificate
 	CSRWhitelist                *config.CSRWhitelist
 	NameWhitelist               *regexp.Regexp
 	ExtensionWhitelist          map[string]bool

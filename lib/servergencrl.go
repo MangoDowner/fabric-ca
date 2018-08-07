@@ -110,23 +110,19 @@ func genCRL(ca *CA, req api.GenCRLRequest) ([]byte, error) {
 		log.Errorf("Failed to get revoked certificates from the database: %s", err)
 		return nil, newHTTPErr(500, ErrRevokedCertsFromDB, "Failed to get revoked certificates")
 	}
-	var caCert *x509.Certificate
-	if IsGMConfig() {
-		sm2Cert, err := getSm2CACert(ca)
-		if err != nil {
-			log.Errorf("Failed to get certficate for CA '%s': %s", ca.HomeDir, err)
-		}
-		caCert = util.ParseSm2Certificate2X509(sm2Cert)
-	} else {
-		caCert, err = getCACert(ca)
+	caCert, err := getSm2CACert(ca)
+	x509Cert := util.ParseSm2Certificate2X509(caCert)
+	if err != nil {
+		log.Errorf("Failed to get certficate for CA '%s': %s", ca.HomeDir, err)
 	}
+
 	if err != nil {
 		log.Errorf("Failed to get certficate for CA '%s': %s", ca.HomeDir, err)
 		return nil, newHTTPErr(500, ErrGetCACert, "Failed to get certficate for CA '%s'", ca.HomeDir)
 	}
 
 
-	if !canSignCRL(caCert) {
+	if !canSignCRL(x509Cert) {
 		return nil, newHTTPErr(500, ErrNoCrlSignAuth,
 			"The CA does not have authority to generate a CRL. Its certificate does not have 'crl sign' key usage")
 	}
@@ -151,7 +147,7 @@ func genCRL(ca *CA, req api.GenCRLRequest) ([]byte, error) {
 		}
 		revokedCerts = append(revokedCerts, revokedCert)
 	}
-	crl, err := crl.CreateGenericCRL(revokedCerts, signer, caCert, expiry)
+	crl, err := crl.CreateGenericCRL(revokedCerts, signer, x509Cert, expiry)
 	if err != nil {
 		log.Errorf("Failed to generate CRL for CA '%s': %s", ca.HomeDir, err)
 		return nil, newHTTPErr(500, ErrGenCRL, "Failed to generate CRL for CA '%s'", ca.HomeDir)

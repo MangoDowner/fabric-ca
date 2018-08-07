@@ -77,8 +77,8 @@ func LoadMgr(caKeyFile, caCertFile string, myCSP bccsp.BCCSP) (*Mgr, error) {
 		}
 		caKey = signer
 	}
-
-	return NewMgr(caKey, caCert)
+	x509CaCert := util.ParseSm2Certificate2X509(caCert)
+	return NewMgr(caKey, x509CaCert)
 }
 
 // NewMgr is the constructor for a TCert manager given a key and an x509 certificate

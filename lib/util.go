@@ -17,7 +17,6 @@ limitations under the License.
 package lib
 
 import (
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
@@ -35,14 +34,15 @@ import (
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/spf13/viper"
 	"github.com/tjfoc/gmsm/sm2"
+	"github.com/tjfoc/gmtls"
 )
 
-var clientAuthTypes = map[string]tls.ClientAuthType{
-	"noclientcert":               tls.NoClientCert,
-	"requestclientcert":          tls.RequestClientCert,
-	"requireanyclientcert":       tls.RequireAnyClientCert,
-	"verifyclientcertifgiven":    tls.VerifyClientCertIfGiven,
-	"requireandverifyclientcert": tls.RequireAndVerifyClientCert,
+var clientAuthTypes = map[string]gmtls.ClientAuthType{
+	"noclientcert":               gmtls.NoClientCert,
+	"requestclientcert":          gmtls.RequestClientCert,
+	"requireanyclientcert":       gmtls.RequireAnyClientCert,
+	"verifyclientcertifgiven":    gmtls.VerifyClientCertIfGiven,
+	"requireandverifyclientcert": gmtls.RequireAndVerifyClientCert,
 }
 
 // GetCertID 返回证书的序列号(SerialNumber)和AKI(授权密钥ID:Authority Key ID)
@@ -92,8 +92,8 @@ func BytesToSm2Cert(bytes []byte) (*sm2.Certificate, error) {
 }
 
 // LoadPEMCertPool loads a pool of PEM certificates from list of files
-func LoadPEMCertPool(certFiles []string) (*x509.CertPool, error) {
-	certPool := x509.NewCertPool()
+func LoadPEMCertPool(certFiles []string) (*sm2.CertPool, error) {
+	certPool := sm2.NewCertPool()
 
 	if len(certFiles) > 0 {
 		for _, cert := range certFiles {

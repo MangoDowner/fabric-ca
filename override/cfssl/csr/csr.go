@@ -58,7 +58,8 @@ func Generate(priv crypto.Signer, req *csr.CertificateRequest) (csr []byte, err 
 		Bytes: csr,
 	}
 
-	log.Info("encoded CSR")
+	//log.Info("encoded CSR")
+	log.Info("编码CSR")
 	csr = pem.EncodeToMemory(&block)
 	return
 }

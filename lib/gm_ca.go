@@ -7,17 +7,11 @@ package lib
 import (
 	"crypto/x509"
 	"github.com/cloudflare/cfssl/csr"
-	"crypto"
-	cferr "github.com/cloudflare/cfssl/errors"
 	"github.com/cloudflare/cfssl/log"
-	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/gm"
 	"github.com/tjfoc/gmsm/sm2"
 	"encoding/pem"
 	"fmt"
-	"net"
-	"net/mail"
-	"crypto/x509/pkix"
 	"encoding/asn1"
 	"time"
 	"github.com/cloudflare/cfssl/signer"
@@ -49,8 +43,8 @@ func SignCert(req signer.SignRequest, ca *CA) (cert []byte, err error) {
 		return nil, err
 	}
 
-	rootCa := ParseX509Certificate2Sm2(x509cert)
-	cert, err = gm.CreateCertificateToMem(template, rootCa, rootKey)
+	//rootCa := ParseX509Certificate2Sm2(x509cert)
+	cert, err = gm.CreateCertificateToMem(template, x509cert, rootKey)
 	clientCert, err := sm2.ReadCertificateFromMem(cert)
 	//FIXME : err不为nil的时候，要加处理
 	var certRecord = certdb.CertificateRecord{
@@ -66,114 +60,6 @@ func SignCert(req signer.SignRequest, ca *CA) (cert []byte, err error) {
 		//log.Info("---[gmca:ParseCertificateRequest] 调用 InsertCertificate错误:" , err)
 	}
 	return
-}
-
-// override: cfssl/initca.go:NewFromSigner
-// NewFromSigner creates a new root certificate from a crypto.Signer.
-func NewFromSigner(key bccsp.Key, req *csr.CertificateRequest, priv crypto.Signer) (cert []byte, err error) {
-	csrPEM, err := Generate(priv, req, key)
-	if err != nil {
-		log.Infof("[gmca:createGmSm2Cert]Call Generate() error :%s", err)
-	}
-	block, _ := pem.Decode(csrPEM)
-	if block == nil {
-		return nil, fmt.Errorf("[gmca:createGmSm2Cert] csr DecodeFailed")
-	}
-	if block.Type != "NEW CERTIFICATE REQUEST" && block.Type != "CERTIFICATE REQUEST" {
-		return nil, fmt.Errorf("[gmca:createGmSm2Cert] sm2 not a csr")
-	}
-	sm2Template, err := parseCertificateRequest(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	log.Debug("[NewFromSigner]")
-	log.Debug(sm2Template.KeyUsage)
-	//log.Infof("PublicKey Type是 %T, sm2Template Type是 %T---", sm2Template.PublicKey, sm2Template)
-	cert, err = gm.CreateCertificateToMem(sm2Template, sm2Template, key)
-	return
-}
-
-/**
-	cloudflare Generate() 转成支持国密
- */
-// Generate从一个CertificateRequest和一个现有的Key创建一个新的CSR。
-// KeyRequest字段被忽略。
-func Generate(priv crypto.Signer, req *csr.CertificateRequest, key bccsp.Key) (csr []byte, err error) {
-	sigAlgo := SignerAlgo(priv)
-	if sigAlgo == sm2.UnknownSignatureAlgorithm {
-		return nil, cferr.New(cferr.PrivateKeyError, cferr.Unavailable)
-	}
-	var tpl = sm2.CertificateRequest{
-		PublicKey:          priv.Public(), //FIXED: 指定的PublicKey类型，及*sm2.PublicKey
-		Subject:            req.Name(),
-		SignatureAlgorithm: sigAlgo,
-	}
-	for i := range req.Hosts {
-		if ip := net.ParseIP(req.Hosts[i]); ip != nil {
-			tpl.IPAddresses = append(tpl.IPAddresses, ip)
-		} else if email, err := mail.ParseAddress(req.Hosts[i]); err == nil && email != nil {
-			tpl.EmailAddresses = append(tpl.EmailAddresses, email.Address)
-		} else {
-			tpl.DNSNames = append(tpl.DNSNames, req.Hosts[i])
-		}
-	}
-
-	if req.CA != nil {
-		err = appendCAInfoToCSRSm2(req.CA, &tpl)
-		if err != nil {
-			err = fmt.Errorf("sm2 GenerationFailed")
-			return
-		}
-	}
-	log.Info("encoded CSR")
-	csr, err = gm.CreateSm2CertificateRequestToMem(&tpl, key)
-	return
-}
-
-/**
-	@override: cloudflare:signerAlgo
- */
-//SignerAlgo从一个crypto.Signer返回一个x.509签名算法。
-func SignerAlgo(priv crypto.Signer) sm2.SignatureAlgorithm {
-	switch pub := priv.Public().(type) {
-	case *sm2.PublicKey:
-		switch pub.Curve {
-		case sm2.P256Sm2():
-			// FIXME: 只是改这个有用么...
-			// 感觉没啥用，如果使用ECDSAWithSHA256也会返回"ecdsa-with-SHA256"
-			return sm2.SM2WithSM3
-		default:
-			return sm2.SM2WithSHA1
-		}
-	default:
-		return sm2.UnknownSignatureAlgorithm
-	}
-}
-
-/**
-	@override: cloudflare:appendCAInfoToCSR
- */
-//appendCAInfoToCSR将CAConfig基本限制(BasicConstraints)扩展到CSR
-func appendCAInfoToCSRSm2(reqConf *csr.CAConfig, csrReq *sm2.CertificateRequest) error {
-	pathlen := reqConf.PathLength
-	if pathlen == 0 && !reqConf.PathLenZero {
-		pathlen = -1
-	}
-	val, err := asn1.Marshal(csr.BasicConstraints{true, pathlen})
-
-	if err != nil {
-		return err
-	}
-
-	csrReq.ExtraExtensions = []pkix.Extension{
-		{
-			Id:       asn1.ObjectIdentifier{2, 5, 29, 19},
-			Value:    val,
-			Critical: true,
-		},
-	}
-
-	return nil
 }
 
 //证书请求转换成证书  参数为  block .Bytes
@@ -279,19 +165,3 @@ func ParseX509Certificate2Sm2(x509Cert *x509.Certificate) *sm2.Certificate {
 	}
 	return sm2cert
 }
-
-// Usages parses the list of key uses in the profile, translating them
-// to a list of X.509 key usages and extended key usages.  The unknown
-// uses are collected into a slice that is also returned.
-//func Usages() (ku sm2.KeyUsage, eku []x509.ExtKeyUsage, unk []string) {
-//	for _, keyUse := range p.Usage {
-//		if kuse, ok := KeyUsage[keyUse]; ok {
-//			ku |= kuse
-//		} else if ekuse, ok := ExtKeyUsage[keyUse]; ok {
-//			eku = append(eku, ekuse)
-//		} else {
-//			unk = append(unk, keyUse)
-//		}
-//	}
-//	return
-//}

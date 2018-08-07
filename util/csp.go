@@ -20,8 +20,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 
@@ -35,7 +33,6 @@ import (
 	_ "github.com/cloudflare/cfssl/cli" // for ocspSignerFromConfig
 	oconfig "github.com/hyperledger/fabric-ca/override/cfssl/config"
 	"github.com/cloudflare/cfssl/csr"
-	"github.com/cloudflare/cfssl/helpers"
 	"github.com/cloudflare/cfssl/log"
 	_ "github.com/cloudflare/cfssl/ocsp" // for ocspSignerFromConfig
 	osigner "github.com/hyperledger/fabric-ca/override/cfssl/signer"
@@ -45,8 +42,9 @@ import (
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric/bccsp/utils"
 
-	"github.com/hyperledger/fabric/bccsp/gm"
 	"github.com/tjfoc/gmsm/sm2"
+	"crypto/tls"
+	"github.com/tjfoc/gmtls"
 )
 
 // GetDefaultBCCSP returns the default BCCSP
@@ -113,8 +111,8 @@ func BccspBackedSigner(caFile, keyFile string, policy *oconfig.Signing, csp bccs
 		}
 		cspSigner = signer
 	}
-	sm2Cert := ParseX509Certificate2Sm2(parsedCa)
-	signer, err := olocal.NewSigner(cspSigner, sm2Cert, osigner.DefaultSigAlgo(cspSigner), policy)
+	//sm2Cert := ParseX509Certificate2Sm2(parsedCa)
+	signer, err := olocal.NewSigner(cspSigner, parsedCa, osigner.DefaultSigAlgo(cspSigner), policy)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new signer: %s", err.Error())
 	}
@@ -163,36 +161,14 @@ func getBCCSPKeyOpts(kr csr.KeyRequest, ephemeral bool) (opts bccsp.KeyGenOpts, 
 }
 
 // GetSignerFromCert 加载SKI展现的密钥，并返回符合crypto.Signer的bccsp signer
-func GetSignerFromCert(cert *x509.Certificate, csp bccsp.BCCSP) (bccsp.Key, crypto.Signer, error) {
+func GetSignerFromCert(cert *sm2.Certificate, csp bccsp.BCCSP) (bccsp.Key, crypto.Signer, error) {
 	if csp == nil {
 		return nil, nil, errors.New("CSP没有初始化")
 	}
-	// 以正确的格式获取公钥
-	var (
-		certPubK bccsp.Key
-		err error
-	)
-	//FIXME: 同济国密改造这里类型居然写错??sm2.PublicKey而不是*sm2.PublicKey??"
-	//log.Info(reflect.TypeOf(cert.PublicKey))
-	switch cert.PublicKey.(type) {
-	//KeyImport即gm.impl.KeyImport->gm.KeyImport
-	case *sm2.PublicKey:
-		//X509证书格式转换为 SM2证书格式
-		sm2cert := gm.ParseX509Certificate2Sm2(cert)
-		certPubK, err = csp.KeyImport(sm2cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
-		//log.Infof("证书是sm2.PublicKey")
-	default:
-		sm2cert := gm.ParseX509Certificate2Sm2(cert)
-		certPubK, err = csp.KeyImport(sm2cert, &bccsp.X509PublicKeyImportOpts{Temporary: true })
-		//log.Infof("证书是默认PublicKey")
-	}
-
+	// get the public key in the right format
+	certPubK, err := csp.KeyImport(cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
 	if err != nil {
-		/**
-		ERROR SAMPLE:
-			Failed importing key with opts [&{true}]: [GMSM2PublicKeyImportOpts] Iterial. Expected byte array.
-		 */
-		return nil, nil, fmt.Errorf("未能导入证书的公钥: %s", err.Error())
+		return nil, nil, errors.WithMessage(err, "Failed to import certificate's public key")
 	}
 	// 得到SKI值的密钥
 	ski := certPubK.SKI()
@@ -213,32 +189,20 @@ func GetSignerFromCert(cert *x509.Certificate, csp bccsp.BCCSP) (bccsp.Key, cryp
 }
 
 //GetSignerFromCertFile加载skiFile和私钥(由SKI代表)，返回符合crypto.Signer的bccsp签署者
-func GetSignerFromCertFile(certFile string, csp bccsp.BCCSP) (bccsp.Key, crypto.Signer, *x509.Certificate, error) {
-	// 加载证书文件
-	var parsedCa *x509.Certificate
-	var err error
-	if IsGMConfig() {
-		parsedSms2Ca, err := sm2.ReadCertificateFromPem(certFile)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("Could not Read sm2 CertificateFromPem [%s]: %s", certFile, err.Error())
-		}
-		parsedCa = ParseSm2Certificate2X509(parsedSms2Ca)
-	} else {
-		certBytes, err := ioutil.ReadFile(certFile)
-		if err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "Could not read certFile '%s'", certFile)
-		}
-		// 解析证书
-		parsedCa, err = helpers.ParseCertificatePEM(certBytes)
+func GetSignerFromCertFile(certFile string, csp bccsp.BCCSP) (bccsp.Key, crypto.Signer, *sm2.Certificate, error) {
+	cert, err := sm2.ReadCertificateFromPem(certFile)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("Could not Read sm2 CertificateFromPem [%s]: %s", certFile, err.Error())
 	}
+
 	//如果读取PEM失败，则将其转为sm2的PEM
 	//ERROR EXAMPLE: {"code":1003,"message":"Failed to parse certificate"}
 	if err != nil   {
 		return nil, nil, nil, err
 	}
 	// Get the signer from the cert
-	key, cspSigner, err := GetSignerFromCert(parsedCa, csp)
-	return key, cspSigner, parsedCa, err
+	key, cspSigner, err := GetSignerFromCert(cert, csp)
+	return key, cspSigner, cert, err
 }
 
 // BCCSPKeyRequestGenerate通过BCCSP生成钥匙
@@ -306,7 +270,6 @@ func ImportBCCSPKeyFromPEM(keyFile string, myCSP bccsp.BCCSP, temporary bool) (b
 // This function originated from crypto/tls/tls.go and was adapted to use a
 // BCCSP Signer
 func LoadX509KeyPair(certFile, keyFile string, csp bccsp.BCCSP) (*tls.Certificate, error) {
-
 	certPEMBlock, err := ioutil.ReadFile(certFile)
 	if err != nil {
 		return nil, err
@@ -336,27 +299,73 @@ func LoadX509KeyPair(certFile, keyFile string, csp bccsp.BCCSP) (*tls.Certificat
 		}
 		return nil, errors.Errorf("Failed to find \"CERTIFICATE\" PEM block in file %s after skipping PEM blocks of the following types: %v", certFile, skippedBlockTypes)
 	}
-	var x509Cert *x509.Certificate
-	//支持国密
-	if IsGMConfig() {
-		sm2Cert, err := sm2.ParseCertificate(cert.Certificate[0])
-		if err != nil {
-			return nil, err
-		}
-		x509Cert = ParseSm2Certificate2X509(sm2Cert)
-	} else {
-		x509Cert, err = x509.ParseCertificate(cert.Certificate[0])
-		if err != nil {
-			return nil, err
-		}
-	}
-
+	x509Cert, err := sm2.ParseCertificate(cert.Certificate[0])
 	_, cert.PrivateKey, err = GetSignerFromCert(x509Cert, csp)
+	//FIXME: 错误不为空，暂时不支持国密
 	if err != nil {
 		if keyFile != "" {
 			log.Debugf("Could not load TLS certificate with BCCSP: %s", err)
 			log.Debugf("Attempting fallback with certfile %s and keyfile %s", certFile, keyFile)
 			fallbackCerts, err := tls.LoadX509KeyPair(certFile, keyFile)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Could not get the private key %s that matches %s", keyFile, certFile)
+			}
+			cert = &fallbackCerts
+		} else {
+			return nil, errors.WithMessage(err, "Could not load TLS certificate with BCCSP")
+		}
+
+	}
+
+	return cert, nil
+}
+
+// LoadX509KeyPair reads and parses a public/private key pair from a pair
+// of files. The files must contain PEM encoded data. The certificate file
+// may contain intermediate certificates following the leaf certificate to
+// form a certificate chain. On successful return, Certificate.Leaf will
+// be nil because the parsed form of the certificate is not retained.
+//
+// This function originated from crypto/tls/tls.go and was adapted to use a
+// BCCSP Signer
+func LoadSm2KeyPair(certFile, keyFile string, csp bccsp.BCCSP) (*gmtls.Certificate, error) {
+	certPEMBlock, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return nil, err
+	}
+
+	cert := &gmtls.Certificate{}
+	var skippedBlockTypes []string
+	for {
+		var certDERBlock *pem.Block
+		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
+		if certDERBlock == nil {
+			break
+		}
+		if certDERBlock.Type == "CERTIFICATE" {
+			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
+		} else {
+			skippedBlockTypes = append(skippedBlockTypes, certDERBlock.Type)
+		}
+	}
+
+	if len(cert.Certificate) == 0 {
+		if len(skippedBlockTypes) == 0 {
+			return nil, errors.Errorf("Failed to find PEM block in file %s", certFile)
+		}
+		if len(skippedBlockTypes) == 1 && strings.HasSuffix(skippedBlockTypes[0], "PRIVATE KEY") {
+			return nil, errors.Errorf("Failed to find certificate PEM data in file %s, but did find a private key; PEM inputs may have been switched", certFile)
+		}
+		return nil, errors.Errorf("Failed to find \"CERTIFICATE\" PEM block in file %s after skipping PEM blocks of the following types: %v", certFile, skippedBlockTypes)
+	}
+	x509Cert, err := sm2.ParseCertificate(cert.Certificate[0])
+	_, cert.PrivateKey, err = GetSignerFromCert(x509Cert, csp)
+	//FIXME: 错误不为空，暂时不支持国密
+	if err != nil {
+		if keyFile != "" {
+			log.Debugf("Could not load TLS certificate with BCCSP: %s", err)
+			log.Debugf("Attempting fallback with certfile %s and keyfile %s", certFile, keyFile)
+			fallbackCerts, err := gmtls.LoadX509KeyPair(certFile, keyFile)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Could not get the private key %s that matches %s", keyFile, certFile)
 			}

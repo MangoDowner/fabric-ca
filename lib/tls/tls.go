@@ -17,8 +17,6 @@ limitations under the License.
 package tls
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"io/ioutil"
 	"time"
 
@@ -30,7 +28,8 @@ import (
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"encoding/pem"
 	"github.com/tjfoc/gmsm/sm2"
-	"github.com/hyperledger/fabric/bccsp/gm"
+	"crypto/tls"
+	"crypto/x509"
 )
 
 // ServerTLSConfig defines key material for a TLS server
@@ -68,9 +67,9 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, err
 		csp = factory.GetDefault()
 	}
 
-	log.Debugf("CA Files: %+v\n", cfg.CertFiles)
-	log.Debugf("Client Cert File: %s\n", cfg.Client.CertFile)
-	log.Debugf("Client Key File: %s\n", cfg.Client.KeyFile)
+	log.Infof("CA Files: %+v\n", cfg.CertFiles)
+	log.Infof("Client Cert File: %s\n", cfg.Client.CertFile)
+	log.Infof("Client Key File: %s\n", cfg.Client.KeyFile)
 
 	if cfg.Client.CertFile != "" {
 		err := checkCertDates(cfg.Client.CertFile)
@@ -85,7 +84,7 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, err
 
 		certs = append(certs, *clientCert)
 	} else {
-		log.Debug("Client TLS certificate and/or key file not provided")
+		log.Info("Client TLS certificate and/or key file not provided")
 	}
 	rootCAPool := x509.NewCertPool()
 	if len(cfg.CertFiles) == 0 {
@@ -133,18 +132,16 @@ func AppendCertsFromPEM(s *x509.CertPool, pemCerts []byte) (ok bool) {
 		if err != nil {
 			continue
 		}
-		cert := gm.ParseSm2Certificate2X509(sm2Cert)
+		cert := util.ParseSm2Certificate2X509(sm2Cert)
 		s.AddCert(cert)
 		ok = true
 	}
-
 	return
 }
 
 // AbsTLSClient makes TLS client files absolute
 func AbsTLSClient(cfg *ClientTLSConfig, configDir string) error {
 	var err error
-
 	for i := 0; i < len(cfg.CertFiles); i++ {
 		cfg.CertFiles[i], err = util.MakeFileAbs(cfg.CertFiles[i], configDir)
 		if err != nil {

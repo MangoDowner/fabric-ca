@@ -25,10 +25,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/cloudflare/cfssl/log"
-	"github.com/go-sql-driver/mysql"
 	"github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/jmoiron/sqlx"
+	"github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -259,7 +259,6 @@ func NewUserRegistryMySQL(datasource string, clientTLSConfig *tls.ClientTLSConfi
 		if err != nil {
 			return nil, errors.WithMessage(err, "Failed to get client TLS for MySQL")
 		}
-
 		mysql.RegisterTLSConfig("custom", tlsConfig)
 	}
 

@@ -45,7 +45,7 @@ func (c *ClientCmd) newEnrollCommand() *cobra.Command {
 				return err
 			}
 
-			log.Debugf("Client configuration settings: %+v", c.clientCfg)
+			log.Debugf("客户端配置设置: %+v", c.clientCfg)
 
 			return nil
 		},

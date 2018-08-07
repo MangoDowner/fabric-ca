@@ -42,6 +42,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	csro "github.com/hyperledger/fabric-ca/override/csr"
+	ocsr "github.com/hyperledger/fabric-ca/override/cfssl/csr"
 )
 
 // Client is the fabric-ca client object
@@ -279,12 +280,7 @@ func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, bccsp.Key, error) 
 		log.Debugf("failed generating BCCSP key: %s", err)
 		return nil, nil, err
 	}
-	csrPEM, err := csr.Generate(cspSigner, cr)
-	if IsGMConfig() {
-		csrPEM, err = Generate(cspSigner, cr, key)
-	} else {
-		csrPEM, err = csr.Generate(cspSigner, cr)
-	}
+	csrPEM, err := ocsr.Generate(cspSigner, cr)
 	if err != nil {
 		log.Debugf("failed generating CSR: %s", err)
 		return nil, nil, err
@@ -452,7 +448,7 @@ func (c *Client) newPost(endpoint string, reqBody []byte) (*http.Request, error)
 func (c *Client) SendReq(req *http.Request, result interface{}) (err error) {
 
 	reqStr := util.HTTPRequestToString(req)
-	log.Debugf("Sending request\n%s", reqStr)
+	log.Debugf("发送请求\n%s", reqStr)
 
 	err = c.Init()
 	if err != nil {

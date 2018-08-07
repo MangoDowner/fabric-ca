@@ -97,7 +97,7 @@ func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorith
 		publicKeyBytes = elliptic.Marshal(pub.Curve, pub.X, pub.Y)
 		oid, ok := oidFromNamedCurve(pub.Curve)
 		if !ok {
-			return nil, pkix.AlgorithmIdentifier{}, errors.New("x509: unsupported elliptic curve")
+			return nil, pkix.AlgorithmIdentifier{}, errors.New("x509[ecdsa,marshalPublicKey]: unsupported elliptic curve")
 		}
 		publicKeyAlgorithm.Algorithm = oidPublicKeyECDSA
 		var paramBytes []byte
@@ -1172,7 +1172,7 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 		}
 		namedCurve := namedCurveFromOID(*namedCurveOID)
 		if namedCurve == nil {
-			return nil, errors.New("x509: unsupported elliptic curve")
+			return nil, errors.New("x509[parsePublicKey]: unsupported elliptic curve")
 		}
 		x, y := elliptic.Unmarshal(namedCurve, asn1Data)
 		if x == nil {
