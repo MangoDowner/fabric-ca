@@ -1,7 +1,7 @@
 package local
 
 import (
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"crypto"
 	oconfig "github.com/hyperledger/fabric-ca/override/cfssl/config"
 	"github.com/cloudflare/cfssl/certdb"

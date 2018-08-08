@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 const (

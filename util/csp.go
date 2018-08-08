@@ -42,7 +42,7 @@ import (
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric/bccsp/utils"
 
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"crypto/tls"
 	"github.com/tjfoc/gmtls"
 )

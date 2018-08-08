@@ -51,7 +51,7 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/common/attrmgr"
 	"github.com/jmoiron/sqlx"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"github.com/hyperledger/fabric/bccsp/gm"
 	oconfig "github.com/hyperledger/fabric-ca/override/cfssl/config"
 	oinitca "github.com/hyperledger/fabric-ca/override/cfssl/initca"

@@ -9,7 +9,7 @@ import (
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric/bccsp/gm"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"encoding/pem"
 	"fmt"
 	"encoding/asn1"

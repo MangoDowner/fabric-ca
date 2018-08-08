@@ -21,7 +21,7 @@ import (
 	"hash"
 	"reflect"
 
-	"github.com/tjfoc/gmsm/sm3"
+	"crypto/sm3"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/common/errors"
 	"github.com/hyperledger/fabric/common/flogging"

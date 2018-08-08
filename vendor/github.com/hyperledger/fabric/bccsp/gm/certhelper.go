@@ -23,7 +23,7 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"github.com/hyperledger/fabric/bccsp"
 )
 

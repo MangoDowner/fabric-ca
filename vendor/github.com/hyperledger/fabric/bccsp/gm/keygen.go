@@ -18,7 +18,7 @@ package gm
 import (
 	"fmt"
 
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"github.com/hyperledger/fabric/bccsp"
 	"crypto/rand"
 )

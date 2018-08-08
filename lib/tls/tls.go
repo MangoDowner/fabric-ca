@@ -27,7 +27,7 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"encoding/pem"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"crypto/tls"
 	"crypto/x509"
 )

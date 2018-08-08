@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric/bccsp"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 type gmsm2PrivateKey struct {

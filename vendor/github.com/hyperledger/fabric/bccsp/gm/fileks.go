@@ -28,8 +28,8 @@ import (
 
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/utils"
-	"github.com/tjfoc/gmsm/sm2"
-	"github.com/tjfoc/gmsm/sm4"
+	"crypto/sm2"
+	"crypto/sm4"
 )
 
 // NewFileBasedKeyStore instantiated a file-based key store at a given position.

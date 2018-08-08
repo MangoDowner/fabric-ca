@@ -31,7 +31,7 @@ import (
 	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/lib/spi"
 	"github.com/hyperledger/fabric-ca/util"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 const (

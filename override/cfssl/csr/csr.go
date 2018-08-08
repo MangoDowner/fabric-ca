@@ -9,7 +9,7 @@ import (
 	"github.com/cloudflare/cfssl/log"
 	"encoding/pem"
 	"github.com/cloudflare/cfssl/csr"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	cferr "github.com/cloudflare/cfssl/errors"
 	"encoding/asn1"
 	"crypto/x509/pkix"

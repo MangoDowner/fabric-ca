@@ -36,7 +36,7 @@ import (
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric/bccsp"
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 var (

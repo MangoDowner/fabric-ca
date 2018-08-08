@@ -2,7 +2,7 @@ package signer
 
 import (
 	"crypto"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"github.com/cloudflare/cfssl/csr"
 	cferr "github.com/cloudflare/cfssl/errors"
 	"encoding/asn1"

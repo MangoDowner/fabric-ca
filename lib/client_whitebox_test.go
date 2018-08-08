@@ -34,7 +34,7 @@ import (
 	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/stretchr/testify/assert"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"encoding/pem"
 )
 

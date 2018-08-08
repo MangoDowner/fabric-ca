@@ -44,7 +44,7 @@ import (
 	stls "github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/spf13/viper"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 const (

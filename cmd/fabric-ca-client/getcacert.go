@@ -33,7 +33,7 @@ import (
 	"github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/spf13/cobra"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 func (c *ClientCmd) newGetCACertCommand() *cobra.Command {

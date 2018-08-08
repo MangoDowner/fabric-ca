@@ -23,7 +23,7 @@ import (
 
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/utils"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 //实现内部的 KeyImporter 接口

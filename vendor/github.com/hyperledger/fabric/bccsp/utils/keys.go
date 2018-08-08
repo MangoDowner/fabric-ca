@@ -26,7 +26,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 // struct to hold info required for PKCS#8

@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/cloudflare/cfssl/auth"
 	"github.com/cloudflare/cfssl/config"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"regexp"
 	"time"
 	"github.com/cloudflare/cfssl/helpers"

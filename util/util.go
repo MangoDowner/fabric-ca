@@ -49,7 +49,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ocsp"
 
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 var (

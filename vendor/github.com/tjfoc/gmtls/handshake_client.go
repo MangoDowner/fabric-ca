@@ -28,7 +28,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 )
 
 type clientHandshakeState struct {

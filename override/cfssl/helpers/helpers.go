@@ -2,7 +2,7 @@ package helpers
 
 import (
 	"crypto"
-	"github.com/tjfoc/gmsm/sm2"
+	"crypto/sm2"
 	"bytes"
 	"github.com/cloudflare/cfssl/log"
 	cferr "github.com/cloudflare/cfssl/errors"
