@@ -29,7 +29,6 @@ import (
 	"encoding/pem"
 	"crypto/sm2"
 	"crypto/tls"
-	"crypto/x509"
 )
 
 // ServerTLSConfig defines key material for a TLS server
@@ -86,7 +85,7 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, err
 	} else {
 		log.Info("Client TLS certificate and/or key file not provided")
 	}
-	rootCAPool := x509.NewCertPool()
+	rootCAPool := sm2.NewCertPool()
 	if len(cfg.CertFiles) == 0 {
 		return nil, errors.New("No TLS certificate files were provided")
 	}
@@ -118,7 +117,7 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, err
 //
 // On many Linux systems, /etc/ssl/cert.pem will contain the system wide set
 // of root CAs in a format suitable for this function.
-func AppendCertsFromPEM(s *x509.CertPool, pemCerts []byte) (ok bool) {
+func AppendCertsFromPEM(s *sm2.CertPool, pemCerts []byte) (ok bool) {
 	for len(pemCerts) > 0 {
 		var block *pem.Block
 		block, pemCerts = pem.Decode(pemCerts)
@@ -132,8 +131,7 @@ func AppendCertsFromPEM(s *x509.CertPool, pemCerts []byte) (ok bool) {
 		if err != nil {
 			continue
 		}
-		cert := util.ParseSm2Certificate2X509(sm2Cert)
-		s.AddCert(cert)
+		s.AddCert(sm2Cert)
 		ok = true
 	}
 	return

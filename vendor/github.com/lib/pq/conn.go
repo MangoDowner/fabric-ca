@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/md5"
 	"crypto/tls"
-	"crypto/x509"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/binary"
@@ -23,6 +22,7 @@ import (
 	"unicode"
 
 	"github.com/lib/pq/oid"
+	"crypto/sm2"
 )
 
 // Common error types
@@ -1056,9 +1056,9 @@ func (cn *conn) verifyCA(client *tls.Conn, tlsConf *tls.Config) {
 		panic(err)
 	}
 	certs := client.ConnectionState().PeerCertificates
-	opts := x509.VerifyOptions{
+	opts := sm2.VerifyOptions{
 		DNSName:       client.ConnectionState().ServerName,
-		Intermediates: x509.NewCertPool(),
+		Intermediates: sm2.NewCertPool(),
 		Roots:         tlsConf.RootCAs,
 	}
 	for i, cert := range certs {
@@ -1136,7 +1136,7 @@ func (cn *conn) setupSSLClientCertificates(tlsConf *tls.Config, o values) {
 // Sets up RootCAs in the TLS configuration if sslrootcert is set.
 func (cn *conn) setupSSLCA(tlsConf *tls.Config, o values) {
 	if sslrootcert := o.Get("sslrootcert"); sslrootcert != "" {
-		tlsConf.RootCAs = x509.NewCertPool()
+		tlsConf.RootCAs = sm2.NewCertPool()
 
 		cert, err := ioutil.ReadFile(sslrootcert)
 		if err != nil {

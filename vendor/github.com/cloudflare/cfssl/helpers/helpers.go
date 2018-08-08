@@ -32,6 +32,7 @@ import (
 	"github.com/cloudflare/cfssl/helpers/derhelpers"
 	"github.com/cloudflare/cfssl/log"
 	"golang.org/x/crypto/pkcs12"
+	"crypto/sm2"
 )
 
 // OneYear is a time.Duration representing a year's worth of seconds.
@@ -319,7 +320,7 @@ func ParseOneCertificateFromPEM(certsPEM []byte) ([]*x509.Certificate, []byte, e
 }
 
 // LoadPEMCertPool loads a pool of PEM certificates from file.
-func LoadPEMCertPool(certsFile string) (*x509.CertPool, error) {
+func LoadPEMCertPool(certsFile string) (*sm2.CertPool, error) {
 	if certsFile == "" {
 		return nil, nil
 	}
@@ -332,12 +333,12 @@ func LoadPEMCertPool(certsFile string) (*x509.CertPool, error) {
 }
 
 // PEMToCertPool concerts PEM certificates to a CertPool.
-func PEMToCertPool(pemCerts []byte) (*x509.CertPool, error) {
+func PEMToCertPool(pemCerts []byte) (*sm2.CertPool, error) {
 	if len(pemCerts) == 0 {
 		return nil, nil
 	}
 
-	certPool := x509.NewCertPool()
+	certPool := sm2.NewCertPool()
 	if !certPool.AppendCertsFromPEM(pemCerts) {
 		return nil, errors.New("failed to load cert pool")
 	}
@@ -471,7 +472,7 @@ func LoadClientCertificate(certFile string, keyFile string) (*tls.Certificate, e
 }
 
 // CreateTLSConfig creates a tls.Config object from certs and roots
-func CreateTLSConfig(remoteCAs *x509.CertPool, cert *tls.Certificate) *tls.Config {
+func CreateTLSConfig(remoteCAs *sm2.CertPool, cert *tls.Certificate) *tls.Config {
 	var certs []tls.Certificate
 	if cert != nil {
 		certs = []tls.Certificate{*cert}

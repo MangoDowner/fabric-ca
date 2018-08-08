@@ -19,6 +19,7 @@ import (
 	"github.com/cloudflare/cfssl/helpers"
 	"github.com/cloudflare/cfssl/log"
 	ocspConfig "github.com/cloudflare/cfssl/ocsp/config"
+	"crypto/sm2"
 )
 
 // A CSRWhitelist stores booleans for fields in the CSR. If a CSRWhitelist is
@@ -96,7 +97,7 @@ type SigningProfile struct {
 	Provider                    auth.Provider
 	RemoteProvider              auth.Provider
 	RemoteServer                string
-	RemoteCAs                   *x509.CertPool
+	RemoteCAs                   *sm2.CertPool
 	ClientCert                  *tls.Certificate
 	CSRWhitelist                *CSRWhitelist
 	NameWhitelist               *regexp.Regexp
@@ -346,7 +347,7 @@ func (p *Signing) SetRemoteCAsFromFile(caFile string) error {
 
 // SetRemoteCAs updates the properties to set remote CAs for TLS
 // remote requests
-func (p *Signing) SetRemoteCAs(remoteCAs *x509.CertPool) {
+func (p *Signing) SetRemoteCAs(remoteCAs *sm2.CertPool) {
 	for _, profile := range p.Profiles {
 		profile.RemoteCAs = remoteCAs
 	}
