@@ -117,9 +117,9 @@ fabric-ca-client: bin/fabric-ca-client
 fabric-ca-server: bin/fabric-ca-server
 
 bin/%: $(GO_SOURCE)
-	@echo "Building ${@F} in bin directory ..."
+	@echo ">>>> 在bin目录里创建${@F} ..."
 	@mkdir -p bin && go build -o bin/${@F} -ldflags "$(GO_LDFLAGS)" $(path-map.${@F})
-	@echo "Built bin/${@F}"
+	@echo "创建BIN/${@F}"
 
 # We (re)build a package within a docker context but persist the $GOPATH/pkg
 # directory so that subsequent builds are faster
