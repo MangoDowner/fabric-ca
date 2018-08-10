@@ -38,12 +38,6 @@ func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) error
 		opts = &factory.FactoryOpts{}
 	}
 	opts.ProviderName = "GM"
-
-	if opts.ProviderName == "" {
-		//默认的提供者由SW改为GM
-		//opts.ProviderName = "SW"
-		opts.ProviderName = "SM"
-	}
 	//设定until中全局配置IsGMConfig
 	SetProviderName(opts.ProviderName)
 	if strings.ToUpper(opts.ProviderName) == "SW" {
