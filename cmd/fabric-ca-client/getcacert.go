@@ -161,7 +161,8 @@ func storeCAChain(config *lib.ClientConfig, si *lib.GetServerInfoResponse) error
 			return err
 		}
 	} else {
-		err = storeCert("intermediate CA certificates", intCACertsDir, fname, certBytes)
+		fmt.Println("CONTENT:", certBytes)
+		err = storeCert("中间CA证书", intCACertsDir, fname, certBytes)
 		if err != nil {
 			return err
 		}
@@ -179,6 +180,6 @@ func storeCert(what, dir, fname string, contents []byte) error {
 	if err != nil {
 		return errors.WithMessage(err, fmt.Sprintf("Failed to store %s at '%s'", what, fpath))
 	}
-	log.Infof("Stored %s at %s", what, fpath)
+	log.Infof("存储 %s 于 %s", what, fpath)
 	return nil
 }
